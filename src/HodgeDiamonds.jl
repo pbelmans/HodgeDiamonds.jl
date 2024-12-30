@@ -10,24 +10,115 @@ export HodgeDiamondRing, HodgePolynomial, HodgeDiamond, to_matrix, to_betti, dim
 HodgeDiamondRing, (x, y) = polynomial_ring(ZZ, [:x, :y])
 HodgePolynomial = Generic.MPoly{BigInt}
 
+"""
+    HodgeDiamond(h::HodgePolynomial)
+
+Construct a Hodge diamond from a Hodge polynomial.
+
+# Example
+
+```jldoctest
+julia> HodgeDiamond(x^2 * y^2 + x * y + 1)
+
+```
+"""
 struct HodgeDiamond
   h::HodgePolynomial
 
   HodgeDiamond(h::HodgePolynomial) = new(h)
 end
 
+"""
+    HodgeDiamond(M::AbstractMatrix)
+
+Construct a Hodge diamond from the given matrix `M`.
+
+# Example
+
+```jldoctest
+julia> HodgeDiamond([1 0 0; 0 1 0; 0 0 1])
+
+```
+"""
 HodgeDiamond(M::AbstractMatrix) = HodgeDiamond(
   sum(M[idx] * x^(idx[1] - 1) * y^(idx[2] - 1) for idx in CartesianIndices(M))
 )
 
+"""
+    to_polynomial(H::HodgeDiamond)
+
+Return the Hodge polynomial of the Hodge diamond `H`.
+
+# Example
+
+```jldoctest
+julia> to_polynomial(HodgeDiamond(x^2 * y^2 + x * y + 1))
+x^2*y^2 + x*y + 1
+```
+"""
 to_polynomial(H::HodgeDiamond) = H.h
+
+"""
+    to_matrix(H::HodgeDiamond)
+
+Return the matrix representation of the Hodge diamond `H`.
+
+# Example
+
+```jldoctest
+julia> to_matrix(HodgeDiamond(x^2 * y^2 + x * y + 1))
+[1 0 0; 0 1 0; 0 0 1]
+```
+"""
 to_matrix(H::HodgeDiamond) =
   [H[i - 1, j - 1] for i in 1:(degree(H.h, x) + 1), j in 1:(degree(H.h, y) + 1)]
 
+"""
+    to_betti(H::HodgeDiamond)
+
+Return the Betti numbers of the Hodge diamond `H`.
+
+# Example
+
+```jldoctest
+julia> to_betti(HodgeDiamond(x^2 * y^2 + x * y + 1))
+[1 1 1]
+```
+"""
 to_betti(H::HodgeDiamond) =
   transpose([coeff(evaluate(H.h, [x, x]), [i, 0]) for i in 0:total_degree(H.h)])
 
+"""
+    dimension(H::HodgeDiamond)
+
+Return the dimension of the Hodge diamond `H`.
+
+This is the total degree of the Hodge polynomial `H.h` divided by 2, which acts acts an
+approximation, in case the Hodge diamond did not arise from an honest variety.
+
+# Example
+
+```jldoctest
+julia> dimension(HodgeDiamond(x^2 * y^2 + x * y + 1))
+2
+```
+"""
 dimension(H::HodgeDiamond) = total_degree(H.h) ÷ 2
+"""
+    codimension(X::HodgeDiamond, Z::HodgeDiamond)
+
+Return the codimension of the Hodge diamond `Z` in the Hodge diamond `X`.
+
+This pretends that `X` is an ambient variety for `Z`, in which case the codimension is
+the difference of their dimensions.
+
+# Example
+
+```jldoctest
+julia> codimension(HodgeDiamond(x^2 * y^2 + x * y + 1), HodgeDiamond(1))
+2
+```
+"""
 codimension(X::HodgeDiamond, Z::HodgeDiamond) = dimension(X) - dimension(Z)
 
 function Base.show(io::IO, H::HodgeDiamond)
