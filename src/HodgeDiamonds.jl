@@ -20,6 +20,7 @@ HodgeDiamond(M::AbstractMatrix) = HodgeDiamond(
   sum(M[idx] * x^(idx[1] - 1) * y^(idx[2] - 1) for idx in CartesianIndices(M))
 )
 
+to_polynomial(H::HodgeDiamond) = H.h
 to_matrix(H::HodgeDiamond) =
   [H[i - 1, j - 1] for i in 1:(degree(H.h, x) + 1), j in 1:(degree(H.h, y) + 1)]
 
