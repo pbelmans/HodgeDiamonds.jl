@@ -13,7 +13,8 @@ const HD = HodgeDiamonds
             :(using AbstractAlgebra, HodgeDiamonds);
             recursive=true,
         )
-        doctest(HodgeDiamonds; manual=false)
+        # the package root, so the manual pages in docs/src are covered too
+        doctest(pkgdir(HodgeDiamonds), [HodgeDiamonds])
     end
 
     @testset "construction" begin
