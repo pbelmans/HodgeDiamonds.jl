@@ -203,6 +203,16 @@ const HD = HodgeDiamonds
             @test euler(X) == 0
             @test X[0, 0] == 1
         end
+        # the CheckedInt128 fast path and the BigInt fallback must agree everywhere,
+        # and the fallback has to actually fire when 128 bits do not suffice
+        for (rank, degree, genus) in [(2, 1, 5), (3, 1, 4), (4, 1, 3), (5, 1, 2), (6, 1, 2)]
+            fast = HD._del_bano(HD.CheckedInt128, rank, degree, genus)
+            @test HD.dense_to_polynomial(fast) ==
+                HD.dense_to_polynomial(HD._del_bano(BigInt, rank, degree, genus))
+        end
+        @test_throws OverflowError HD._del_bano(HD.CheckedInt128, 3, 1, 30)
+        @test arises_from_variety(moduli_vector_bundles(3, 1, 30))
+
         @test seshadris_desingularisation(2) == Pn(3)
         @test euler(seshadris_desingularisation(3)) == 112
         @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 5)) ==
@@ -351,6 +361,13 @@ const HD = HodgeDiamonds
         @test length(HD.compositions(5)) == 16
         @test all(sum(c) == 5 for c in HD.compositions(5))
         @test HD.multiplicities([3, 1, 1]) == Dict(3 => 1, 1 => 2)
+
+        # CheckedInt128 refuses to wrap
+        @test HD.CheckedInt128(3) + HD.CheckedInt128(4) == HD.CheckedInt128(7)
+        @test (2 * HD.CheckedInt128(5)).value == 10
+        @test BigInt(HD.CheckedInt128(-7)) == -7
+        @test_throws OverflowError HD.CheckedInt128(typemax(Int128)) * HD.CheckedInt128(2)
+        @test_throws OverflowError HD.CheckedInt128(BigInt(2)^200)
 
         # truncated series arithmetic
         @test HD.series_one_minus_power(0, 4) == BigInt[0, 0, 0, 0, 0]
