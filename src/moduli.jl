@@ -376,33 +376,31 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
   r >= 2 || throw(ArgumentError("rank needs to be at least 2"))
   g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
   gcd(r, d) == 1 || throw(ArgumentError("rank and degree need to be coprime"))
-  total = with_fast_integers(T -> _del_bano(T, r, d, g))
+  total = _del_bano(r, d, g)
   return HodgeDiamond(dense_to_polynomial(total); from_variety=true)
 end
 
-function _del_bano(::Type{T}, r::Int, d::Int, g::Int) where {T<:Number}
+function _del_bano(r::Int, d::Int, g::Int)
   N = (r^2 - 1) * (g - 1)                     # dimension of the moduli space
 
   # del Baño's second factor splits over the parts of the composition, so each part
   # value is computed once instead of once per composition
-  part_numerator = Dict{Int,Matrix{T}}()
-  part_denominator = Dict{Int,Vector{T}}()
+  part_numerator = Dict{Int,Matrix{BigInt}}()
+  part_denominator = Dict{Int,Vector{BigInt}}()
   for part in 1:r
-    numerator = dense_one(T, N)
-    denominator = series_one(T, N)
+    numerator = dense_one(N)
+    denominator = series_one(N)
     for i in 1:(part - 1)
       # (1 + x^i y^{i+1})^g (1 + x^{i+1} y^i)^g
-      factor = zero_coefficients(T, N + 1)
+      factor = zero_coefficients(N + 1)
       for s in 0:g, u in 0:g
         a, b = s * i + u * (i + 1), s * (i + 1) + u * i
         (a <= N && b <= N) || continue
-        factor[a + 1, b + 1] += T(binomial(BigInt(g), s) * binomial(BigInt(g), u))
+        factor[a + 1, b + 1] += binomial(BigInt(g), s) * binomial(BigInt(g), u)
       end
       numerator = multiply_truncated(numerator, factor, N)
       for exponent in (i, i + 1)
-        denominator = series_multiply(
-          denominator, series_one_minus_power(T, exponent, N), N
-        )
+        denominator = series_multiply(denominator, series_one_minus_power(exponent, N), N)
       end
     end
     part_numerator[part] = numerator
@@ -410,24 +408,20 @@ function _del_bano(::Type{T}, r::Int, d::Int, g::Int) where {T<:Number}
   end
 
   # ((1 + x)(1 + y))^{g(k-1)}, depending only on the length k of the composition
-  length_numerator = Dict{Int,Matrix{T}}()
+  length_numerator = Dict{Int,Matrix{BigInt}}()
   for k in 1:r
-    factor = zero_coefficients(T, N + 1)
+    factor = zero_coefficients(N + 1)
     exponent = g * (k - 1)
     for s in 0:min(exponent, N), u in 0:min(exponent, N)
-      factor[s + 1, u + 1] = T(
+      factor[s + 1, u + 1] =
         binomial(BigInt(exponent), s) * binomial(BigInt(exponent), u)
-      )
     end
     length_numerator[k] = factor
   end
 
-  numerator_cache = Dict{Tuple{Vector{Int},Int},Matrix{T}}()
-  total = zero_coefficients(T, N + 1)
-  # longest compositions first: they carry the largest binomial coefficients, so when
-  # `CheckedInt128` is going to overflow it does so on the first one rather than the last,
-  # which makes the discarded attempt cheap. The sum does not depend on the order.
-  for composition in sort(compositions(r); by=length, rev=true)
+  numerator_cache = Dict{Tuple{Vector{Int},Int},Matrix{BigInt}}()
+  total = zero_coefficients(N + 1)
+  for composition in compositions(r)
     k = length(composition)
 
     # del Baño's fourth factor is a power of the Lefschetz class
@@ -458,10 +452,10 @@ function _del_bano(::Type{T}, r::Int, d::Int, g::Int) where {T<:Number}
     end
 
     # every denominator is a polynomial in L = xy, so collect and invert once
-    denominator_series = series_one(T, M)
+    denominator_series = series_one(M)
     for _ in 1:(k - 1)
       denominator_series = series_multiply(
-        denominator_series, series_one_minus_power(T, 1, M), M
+        denominator_series, series_one_minus_power(1, M), M
       )
     end
     for part in composition
@@ -472,7 +466,7 @@ function _del_bano(::Type{T}, r::Int, d::Int, g::Int) where {T<:Number}
     for j in 1:(k - 1)
       denominator_series = series_multiply(
         denominator_series,
-        series_one_minus_power(T, composition[j] + composition[j + 1], M),
+        series_one_minus_power(composition[j] + composition[j + 1], M),
         M,
       )
     end

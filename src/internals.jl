@@ -12,68 +12,6 @@
 # integers. They are plain `Dict`s, so none of this is safe to call from several threads at
 # once; a lock per cache is the fix if that ever matters.
 
-# ── a machine integer that refuses to wrap ───────────────────────────────────────
-
-"""
-    CheckedInt128
-
-A 128-bit integer whose arithmetic throws `OverflowError` rather than wrapping.
-
-The dense kernels below are generic in their coefficient type, and almost all Hodge
-numbers fit comfortably in 128 bits. Running them on this type instead of `BigInt` avoids
-an allocation per operation, and a caller can retry with `BigInt` if the fast path
-overflows, so the speed costs nothing in correctness.
-"""
-struct CheckedInt128 <: Number
-  value::Int128
-end
-
-function _narrow(x::Integer)
-  typemin(Int128) <= x <= typemax(Int128) ||
-    throw(OverflowError("$x does not fit in Int128"))
-  return Int128(x)
-end
-
-CheckedInt128(x::Integer) = CheckedInt128(_narrow(x))
-CheckedInt128(x::CheckedInt128) = x
-Base.zero(::Type{CheckedInt128}) = CheckedInt128(Int128(0))
-Base.one(::Type{CheckedInt128}) = CheckedInt128(Int128(1))
-Base.iszero(a::CheckedInt128) = iszero(a.value)
-Base.isone(a::CheckedInt128) = isone(a.value)
-Base.abs(a::CheckedInt128) = CheckedInt128(abs(a.value))
-Base.:(==)(a::CheckedInt128, b::CheckedInt128) = a.value == b.value
-Base.:-(a::CheckedInt128) = CheckedInt128(Base.Checked.checked_neg(a.value))
-function Base.:+(a::CheckedInt128, b::CheckedInt128)
-  return CheckedInt128(Base.Checked.checked_add(a.value, b.value))
-end
-function Base.:-(a::CheckedInt128, b::CheckedInt128)
-  return CheckedInt128(Base.Checked.checked_sub(a.value, b.value))
-end
-function Base.:*(a::CheckedInt128, b::CheckedInt128)
-  return CheckedInt128(Base.Checked.checked_mul(a.value, b.value))
-end
-Base.BigInt(a::CheckedInt128) = BigInt(a.value)
-Base.convert(::Type{CheckedInt128}, x::Integer) = CheckedInt128(x)
-Base.promote_rule(::Type{CheckedInt128}, ::Type{<:Integer}) = CheckedInt128
-
-"""
-    with_fast_integers(worker)
-
-Run `worker(CheckedInt128)`, retrying as `worker(BigInt)` if 128 bits turn out not to be
-enough. The worker is generic in its coefficient type, so there is only ever one algorithm.
-
-Nothing computable in reasonable time overflows in Göttsche's formula, but del Baño's does
-from around rank 6 and genus 9, which is well inside what one might ask for.
-"""
-function with_fast_integers(worker)
-  try
-    return worker(CheckedInt128)
-  catch problem
-    problem isa OverflowError || rethrow()
-    return worker(BigInt)
-  end
-end
-
 # ── dense truncated bivariate polynomials ────────────────────────────────────────
 #
 # `coefficients[i + 1, j + 1]` is the coefficient of ``x^i y^j``, and terms of exponent
