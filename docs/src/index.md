@@ -143,14 +143,23 @@ julia> χ(K3()), χ_top(K3())
 
 ## Differences from the Sage version
 
-The mathematics is the same, and the constructions carry the same names. The interface
+The mathematics is the same, and most constructions carry the same names. The interface
 differs where Julia has a better way of saying something:
 
   - The empty space is `zero(HodgeDiamond)` and the point is `one(HodgeDiamond)`, next to
     [`point`](@ref).
   - `Matrix(X)` gives the matrix of Hodge numbers, and the constructor
     [`HodgeDiamond`](@ref) goes back, from a matrix or from a polynomial, rather than
-    through Sage's `from_matrix` and `from_polynomial`.
+    through Sage's `from_matrix` and `from_polynomial`. Likewise
+    [`HochschildHomology`](@ref) replaces `from_list`.
+  - `X[p, q]` is a single Hodge number, and a whole row is [`row`](@ref): unlike in Sage,
+    `X[i]` is not a second meaning of indexing.
+  - `X(i)` only twists by the Lefschetz class. To specialise the Hodge--Poincaré polynomial
+    use `evaluate(X, a, b)`.
+  - Sage's `symmetric_power(n, g)` for a curve is [`symn`](@ref)`(g, n)`, taking the curve
+    before the power as [`hilbn`](@ref) does, which itself accepts a curve as well as a
+    surface. The name [`symmetric_power`](@ref) is left to Hochschild homology.
+  - Sage's `bundle` is [`projective_bundle`](@ref).
   - Displaying a diamond in the REPL prints the diamond; `show(io, X)` prints a one-line
     summary. Sage has these the other way around.
   - LaTeX output goes through `show(io, MIME("text/latex"), X)`.
