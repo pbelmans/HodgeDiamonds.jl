@@ -48,19 +48,10 @@ and for the interface differences from the Sage version.
 
 Hodge diamonds are stored as their Hodge--Poincaré polynomial in `ZZ[x, y]`, so disjoint
 union is addition, product of varieties is multiplication, and a Lefschetz twist is
-multiplication by `(xy)^k`.
-
-Dependencies are [AbstractAlgebra.jl](https://github.com/Nemocas/AbstractAlgebra.jl) for
-polynomial rings, univariate fraction fields and power series,
-[Semisimple.jl](https://github.com/HomogeneousTools/Semisimple.jl) for Weyl group degrees,
-and [Combinatorics.jl](https://github.com/JuliaMath/Combinatorics.jl). All three are pure
-Julia and load in about half a second.
-
-Where AbstractAlgebra's generic *multivariate* fraction field would be too slow, notably in
-del Baño's formula for moduli of vector bundles, formulas are evaluated with dense
-polynomials truncated at the dimension of the variety. This is exact, not approximate: every
-denominator occurring is a unit, and the answer is always a polynomial of bidegree at most
-`(dim X, dim X)`.
+multiplication by `(xy)^k`. Dependencies are
+[AbstractAlgebra.jl](https://github.com/Nemocas/AbstractAlgebra.jl),
+[Semisimple.jl](https://github.com/HomogeneousTools/Semisimple.jl) and
+[Combinatorics.jl](https://github.com/JuliaMath/Combinatorics.jl), all pure Julia.
 
 ## License
 
