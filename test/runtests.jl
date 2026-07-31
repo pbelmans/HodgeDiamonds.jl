@@ -117,6 +117,16 @@ const R, x, y = hodge_ring()
     @test plain(Pn(1)) == "  1\n\n  1"
     HD.HIDE_ZEROES[] = false
     @test plain(Pn(1)) == "      1\n  0       0\n      1"
+
+    # and the same options through the IO context
+    latex(X; kwargs...) = sprint((io, Y) -> show(io, MIME("text/latex"), Y), X; kwargs...)
+    @test sprint(
+      (io, X) -> show(io, MIME("text/plain"), X),
+      Pn(2) * curve(3);
+      context=:quarter => true,
+    ) == sprint(io -> pprint(io, Pn(2) * curve(3); quarter=true))
+    @test occursin("\$0\$", latex(K3()))
+    @test !occursin("\$0\$", latex(K3(); context=:hide_zeroes => true))
   end
 
   @testset "Hochschild homology" begin

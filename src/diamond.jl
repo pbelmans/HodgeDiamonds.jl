@@ -840,7 +840,19 @@ Pretty print the Hodge diamond, optionally hiding zeroes or printing only the to
 quarter.
 
 The defaults can be changed globally through `HodgeDiamonds.HIDE_ZEROES[]` and
-`HodgeDiamonds.QUARTER[]`.
+`HodgeDiamonds.QUARTER[]`, or for a single stream through the IO context, which is what
+`show` reads:
+
+```jldoctest
+show(IOContext(stdout, :quarter => true), MIME("text/plain"), Pn(2) * curve(3))
+
+# output
+
+              1
+          3
+      0       2
+  0       3
+```
 
 # Examples
 
@@ -887,10 +899,20 @@ julia> pprint(Pn(2) * curve(3); hide_zeroes = true, quarter = true)
   3
 ```
 """
-pprint(io::IO, X::HodgeDiamond; hide_zeroes::Bool=HIDE_ZEROES[], quarter::Bool=QUARTER[]) =
-  print(io, _render(_grid(X; hide_zeroes=hide_zeroes, quarter=quarter)))
+pprint(io::IO, X::HodgeDiamond; kwargs...) = print(io, _render(_grid(io, X; kwargs...)))
 
 pprint(X::HodgeDiamond; kwargs...) = pprint(stdout, X; kwargs...)
+
+# The printing options come from the IO context where it carries them, and from the global
+# defaults otherwise. Explicit keywords win over both.
+function _grid(
+  io::IO,
+  X::HodgeDiamond;
+  hide_zeroes::Bool=get(io, :hide_zeroes, HIDE_ZEROES[]),
+  quarter::Bool=get(io, :quarter, QUARTER[]),
+)
+  return _grid(X; hide_zeroes=hide_zeroes, quarter=quarter)
+end
 
 Base.show(io::IO, ::MIME"text/plain", X::HodgeDiamond) = pprint(io, X)
 
@@ -917,7 +939,7 @@ julia> show(stdout, MIME("text/latex"), K3())
 ```
 """
 function Base.show(io::IO, ::MIME"text/latex", X::HodgeDiamond)
-  table = _grid(X; hide_zeroes=HIDE_ZEROES[], quarter=QUARTER[])
+  table = _grid(io, X)
   println(io, "\\begin{tabular}{", "c"^size(table, 2), "}")
   for i in axes(table, 1)
     cells = (isempty(cell) ? "" : "\$$cell\$" for cell in view(table, i, :))
