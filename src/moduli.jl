@@ -389,7 +389,7 @@ function _del_bano(r::Int, d::Int, g::Int)
   # a buffer is copied out by value, since sharing `BigInt` objects with a buffer would let
   # the next `zero_corner!` erase it.
   scratch = BigInt()
-  left, right, factor = (zero_coefficients(N + 1) for _ in 1:3)
+  left, right = zero_coefficients(N + 1), zero_coefficients(N + 1)
 
   part_numerator = Dict{Int,Matrix{BigInt}}()
   part_denominator = Dict{Int,Vector{BigInt}}()
@@ -398,7 +398,7 @@ function _del_bano(r::Int, d::Int, g::Int)
     denominator = series_one(N)
     for i in 1:(part - 1)
       # (1 + x^i y^{i+1})^g (1 + x^{i+1} y^i)^g
-      zero_corner!(factor, N)
+      factor = zero_coefficients(N + 1)
       for s in 0:g, u in 0:g
         a, b = s * i + u * (i + 1), s * (i + 1) + u * i
         (a <= N && b <= N) || continue

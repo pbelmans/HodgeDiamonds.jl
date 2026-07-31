@@ -170,22 +170,19 @@ end
 Multiply the dense bivariate polynomial by `series` evaluated at ``L = xy``, truncated to
 bidegree `(N, N)`.
 """
-# `BigInt` arithmetic allocates a fresh object per operation, and at truncation degrees in
-# the hundreds a fresh output matrix is tens of thousands of allocations besides. These
-# specialisations follow AbstractAlgebra's convention for unsafe operators (see the "Ring
-# functionality" chapter): the mutated object comes first, and a caller that owns a buffer
-# can hand it in so nothing is allocated at all.
-#
-# Two things to respect. Every slot must hold its own `BigInt`, which is what
-# `zero_coefficients(BigInt, …)` guarantees and `zeros` does not. And the buffers are sized
-# once at the largest truncation degree while individual calls use a smaller one, so both
-# the clearing and the loops are bounded by the degree of the call rather than by the size
-# of the buffer: anything outside that corner is stale, never read.
+# `BigInt` arithmetic allocates per operation, and a fresh output matrix is tens of
+# thousands of allocations besides. These specialisations follow AbstractAlgebra's
+# convention for unsafe operators: the mutated object comes first, so a caller holding a
+# buffer can hand it in. Buffers are sized once at the largest truncation degree and reused
+# at smaller ones, so every loop is bounded by the degree of the call rather than by the
+# buffer: whatever lies outside that corner is stale, and never read.
 
-"Set the leading `(N+1)×(N+1)` corner of `dense` to zero, keeping GMP's limb storage."
+"How far along each axis of `dense` a call truncating at `N` may reach."
+extent(dense::AbstractMatrix, N::Int) = min(N + 1, size(dense, 1))
+
+"Zero the leading corner of `dense`, keeping GMP's limb storage."
 function zero_corner!(dense::Matrix{BigInt}, N::Int)
-  rows, columns = min(N + 1, size(dense, 1)), min(N + 1, size(dense, 2))
-  @inbounds for j in 1:columns, i in 1:rows
+  @inbounds for j in 1:extent(dense, N), i in 1:extent(dense, N)
     MPZ.set_si!(dense[i, j], 0)
   end
   return dense
@@ -194,16 +191,13 @@ end
 """
     copy_corner!(destination, source, N)
 
-Copy the leading `(N+1)×(N+1)` corner of `source` into `destination` by value.
-
-`copyto!` would copy the references, leaving the two matrices sharing `BigInt` objects,
-which the in-place kernels would then corrupt.
+Copy the leading corner of `source` into `destination` by value. `copyto!` would copy the
+references, leaving the two sharing `BigInt` objects for the kernels below to corrupt.
 """
 function copy_corner!(destination::Matrix{BigInt}, source::Matrix{BigInt}, N::Int)
   zero_corner!(destination, N)
-  rows = min(N + 1, size(destination, 1), size(source, 1))
-  columns = min(N + 1, size(destination, 2), size(source, 2))
-  @inbounds for j in 1:columns, i in 1:rows
+  reach = min(extent(destination, N), extent(source, N))
+  @inbounds for j in 1:reach, i in 1:reach
     MPZ.set!(destination[i, j], source[i, j])
   end
   return destination
@@ -212,44 +206,11 @@ end
 """
     own_copy(dense)
 
-An independent copy, with storage of its own, safe to retain while buffers are reused.
-
-Note that neither `copy` nor a `BigInt[BigInt(value) for value in dense]` comprehension
-does this: the former copies the references and `BigInt(x::BigInt)` returns `x` itself, so
-both leave the result sharing storage with `dense`.
+A copy with storage of its own, safe to retain while buffers are reused. Neither `copy` nor
+`BigInt[BigInt(value) for value in dense]` manages that: the first copies the references,
+and `BigInt(x::BigInt)` returns `x` itself.
 """
-function own_copy(dense::Matrix{BigInt})
-  copied = Matrix{BigInt}(undef, size(dense))
-  @inbounds for index in eachindex(dense)
-    copied[index] = MPZ.set!(BigInt(), dense[index])
-  end
-  return copied
-end
-
-function _multiply_into!(
-  product::Matrix{BigInt},
-  first::Matrix{BigInt},
-  second::Matrix{BigInt},
-  N::Int,
-  scratch::BigInt,
-)
-  first_rows, first_columns = min(N + 1, size(first, 1)), min(N + 1, size(first, 2))
-  @inbounds for column in 1:min(N + 1, size(second, 2)),
-    rowindex in 1:min(N + 1, size(second, 1))
-
-    coefficient = second[rowindex, column]
-    iszero(coefficient) && continue
-    for other_column in 1:min(first_columns, N + 2 - column),
-      other_row in 1:min(first_rows, N + 2 - rowindex)
-
-      value = first[other_row, other_column]
-      iszero(value) && continue
-      MPZ.mul!(scratch, coefficient, value)
-      MPZ.add!(product[other_row + rowindex - 1, other_column + column - 1], scratch)
-    end
-  end
-  return product
-end
+own_copy(dense::Matrix{BigInt}) = map(value -> MPZ.set!(BigInt(), value), dense)
 
 """
     multiply_truncated!(product, first, second, N, scratch)
@@ -257,25 +218,46 @@ end
 Write the product of two dense bivariate polynomials, truncated to bidegree at most
 `(N, N)`, into `product`, which may be any buffer at least that large.
 """
-multiply_truncated!(
+function multiply_truncated!(
   product::Matrix{BigInt},
   first::Matrix{BigInt},
   second::Matrix{BigInt},
   N::Int,
   scratch::BigInt,
-) = _multiply_into!(zero_corner!(product, N), first, second, N, scratch)
+)
+  zero_corner!(product, N)
+  reach = extent(first, N)
+  @inbounds for j in 1:extent(second, N), i in 1:extent(second, N)
+    coefficient = second[i, j]
+    iszero(coefficient) && continue
+    for l in 1:min(reach, N + 2 - j), k in 1:min(reach, N + 2 - i)
+      value = first[k, l]
+      iszero(value) && continue
+      MPZ.mul!(scratch, coefficient, value)
+      MPZ.add!(product[k + i - 1, l + j - 1], scratch)
+    end
+  end
+  return product
+end
 
 multiply_truncated(first::Matrix{BigInt}, second::Matrix{BigInt}, N::Int) =
-  _multiply_into!(zero_coefficients(BigInt, N + 1), first, second, N, BigInt())
+  multiply_truncated!(zero_coefficients(BigInt, N + 1), first, second, N, BigInt())
 
-function _lefschetz_into!(
+"""
+    multiply_by_lefschetz_series!(product, dense, series, N, scratch)
+
+Write `dense` multiplied by `series` evaluated at ``L = xy``, truncated to bidegree
+`(N, N)`, into `product`.
+"""
+function multiply_by_lefschetz_series!(
   product::Matrix{BigInt},
   dense::Matrix{BigInt},
   series::Vector{BigInt},
   N::Int,
   scratch::BigInt,
 )
-  @inbounds for j in 1:min(N + 1, size(dense, 2)), i in 1:min(N + 1, size(dense, 1))
+  zero_corner!(product, N)
+  @inbounds for j in 1:extent(dense, N), i in 1:extent(dense, N)
     value = dense[i, j]
     iszero(value) && continue
     for power in 0:(N + 1 - max(i, j))
@@ -288,22 +270,10 @@ function _lefschetz_into!(
   return product
 end
 
-"""
-    multiply_by_lefschetz_series!(product, dense, series, N, scratch)
-
-Write `dense` multiplied by `series` evaluated at ``L = xy``, truncated to bidegree
-`(N, N)`, into `product`.
-"""
-multiply_by_lefschetz_series!(
-  product::Matrix{BigInt},
-  dense::Matrix{BigInt},
-  series::Vector{BigInt},
-  N::Int,
-  scratch::BigInt,
-) = _lefschetz_into!(zero_corner!(product, N), dense, series, N, scratch)
-
 multiply_by_lefschetz_series(dense::Matrix{BigInt}, series::Vector{BigInt}, N::Int) =
-  _lefschetz_into!(zero_coefficients(BigInt, N + 1), dense, series, N, BigInt())
+  multiply_by_lefschetz_series!(
+    zero_coefficients(BigInt, N + 1), dense, series, N, BigInt()
+  )
 
 function multiply_by_lefschetz_series(
   dense::Matrix{T}, series::Vector{T}, N::Int
