@@ -12,6 +12,7 @@ module HodgeDiamonds
 using AbstractAlgebra
 using Combinatorics: multiexponents, partitions, powerset
 import LinearAlgebra: cross, ×
+using PrecompileTools: @compile_workload
 using Semisimple: Semisimple
 
 #: polynomial ring used for the Hodge--Poincaré polynomial
@@ -105,5 +106,28 @@ export brauer_severi,
     quot_scheme_curve,
     seshadris_desingularisation,
     slope
+
+# Compile the paths a first session actually walks, so the first computation does not pay
+# for inference. Costs a few seconds of precompilation, saves about a second per call.
+@compile_workload begin
+    S = K3()
+    for X in (S, Pn(2), curve(3), hypersurface(3, 4))
+        repr(MIME("text/plain"), X)
+        betti(X)
+        euler(X)
+        X * X
+        X(1)
+        Matrix(X)
+        arises_from_variety(X)
+    end
+    hilbn(S, 2)
+    hh(S)
+    moduli_vector_bundles(2, 1, 3)
+    grassmannian(2, 5)
+    partial_flag_variety("D4", [1, 2])
+    quiver_moduli([0 3; 0 0], (1, 1))
+    complete_intersection([2, 2], 3)
+    generalised_kummer(2)
+end
 
 end # module
