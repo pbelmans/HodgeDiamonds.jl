@@ -354,6 +354,19 @@ end
 
 Whether the Hodge diamond could arise from a smooth projective variety: it satisfies
 Hodge symmetry and Serre symmetry, and carries no Lefschetz twist.
+
+# Examples
+
+```jldoctest
+julia> arises_from_variety(K3())
+true
+
+julia> arises_from_variety(lefschetz())
+false
+
+julia> arises_from_variety(hopf())
+false
+```
 """
 arises_from_variety(X::HodgeDiamond) =
   is_hodge_symmetric(X) && is_serre_symmetric(X) && iszero(lefschetz_power(X))
@@ -676,6 +689,25 @@ hirzebruch(X::HodgeDiamond) = evaluate(X, Ry(-1), _y)
     homological_unit(X)
 
 Dimensions of ``\\mathrm{H}^\\bullet(X,\\mathcal{O}_X)``, a notion introduced by Abuaf.
+
+This reads off the ``\\mathrm{h}^{0,q}``, so it can differ from the ``\\mathrm{h}^{p,0}``
+when Hodge symmetry fails.
+
+# Examples
+
+```jldoctest
+julia> homological_unit(K3())
+3-element Vector{BigInt}:
+ 1
+ 0
+ 1
+
+julia> homological_unit(hopf())
+3-element Vector{BigInt}:
+ 1
+ 1
+ 0
+```
 """
 homological_unit(X::HodgeDiamond) = [X[0, q] for q in 0:_top_degree(X)]
 

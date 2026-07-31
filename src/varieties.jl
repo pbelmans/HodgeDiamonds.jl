@@ -181,9 +181,9 @@ function _symn_hodge(genus::Integer, n::Integer, p::Integer, q::Integer)
 end
 
 """
-    abelian(dimension)
+    abelian(n)
 
-Hodge diamond of an abelian variety of the given dimension, computed as the corresponding
+Hodge diamond of an abelian variety of dimension `n`, computed as the corresponding
 power of an elliptic curve.
 
 # Examples
@@ -196,7 +196,7 @@ julia> abelian(2) == surface(1, 2, 4)
 true
 ```
 """
-abelian(dimension::Integer) = curve(1)^dimension
+abelian(n::Integer) = curve(1)^n
 
 """
     jacobian(genus)
@@ -231,10 +231,10 @@ true
 jacobian(genus::Integer) = abelian(genus)
 
 """
-    kummer_resolution(dimension)
+    kummer_resolution(g)
 
 Hodge diamond of the standard resolution of the Kummer variety of an abelian variety of
-the given dimension.
+dimension `g`.
 
 There is an invariant part, the Hodge numbers of even degree, to which the resolution of
 the ``2^{2g}`` singularities is added.
@@ -248,8 +248,7 @@ julia> kummer_resolution(2) == K3()
 true
 ```
 """
-function kummer_resolution(dimension::Integer)
-  g = dimension
+function kummer_resolution(g::Integer)
   f = polynomial(jacobian(g))
   invariant = build_polynomial(
     (coefficient, exponents) for
@@ -345,7 +344,7 @@ complete_intersection(degree::Integer, dimension::Integer) =
 
 function complete_intersection(degrees, dimension::Integer)
   multidegree = collect(degrees)
-  N = Int(dimension)
+  N = Int(dimension)  # the dimension is also the truncation degree here
 
   product = dense_one(N)
   for d in multidegree

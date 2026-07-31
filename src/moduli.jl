@@ -208,13 +208,13 @@ function generalised_kummer(n::Integer)
   )
 end
 
-# The sum over partitions b of `size` appearing inside Göttsche--Soergel's formula.
+# The sum over partitions b of `multiplicity` appearing inside Göttsche--Soergel's formula.
 const KUMMER_INNER_CACHE = Dict{Tuple{Int,Int},Matrix{RationalCoefficient}}()
 
-function _kummer_inner(size::Int, N::Int)
-  get!(KUMMER_INNER_CACHE, (size, N)) do
+function _kummer_inner(multiplicity::Int, N::Int)
+  get!(KUMMER_INNER_CACHE, (multiplicity, N)) do
     total = zero_coefficients(RationalCoefficient, N + 1)
-    for partition in partitions(size)
+    for partition in partitions(multiplicity)
       piece = dense_one(RationalCoefficient, N)
       for (part, count) in multiplicities(partition)
         factor = zero_coefficients(RationalCoefficient, N + 1)
@@ -539,9 +539,9 @@ function _mobius(n::Int)
   n >= 1 || throw(ArgumentError("argument needs to be positive"))
   sign, remaining = 1, n
   for divisor in 2:isqrt(n)
-    is_zero(remaining % divisor) || continue
+    iszero(remaining % divisor) || continue
     remaining ÷= divisor
-    is_zero(remaining % divisor) && return 0
+    iszero(remaining % divisor) && return 0
     sign = -sign
   end
   return isone(remaining) ? sign : -sign
@@ -602,7 +602,7 @@ function _intersection_moduli_vector_bundles(r::Int, d::Int, g::Int)
   # divisors of e reach s̃^e, and n K_{e/n} ≤ K_e keeps the shift non-negative
   total = copy(logarithm[e])
   for n in 2:e
-    is_zero(e % n) || continue
+    iszero(e % n) || continue
     mobius = _mobius(n)
     iszero(mobius) && continue
     m = e ÷ n
@@ -775,18 +775,18 @@ true
 function moduli_parabolic_vector_bundles_rank_two(genus::Integer, weights)
   alpha = collect(weights)
   total = sum(alpha)
-  N = length(alpha)
+  points = length(alpha)
 
   # A subset lands in the band of every integer j within distance one of its value, of which
   # there are at most two, so one pass over the powerset tallies all the bands at once.
-  in_band = zeros(BigInt, N + 1)
-  for subset in powerset(1:N)
+  in_band = zeros(BigInt, points + 1)
+  for subset in powerset(1:points)
     value = length(subset) + total - 2 * sum(alpha[i] for i in subset; init=0)
-    for j in max(0, Int(ceil(value)) - 1):min(N, Int(floor(value)) + 1)
+    for j in max(0, ceil(Int, value) - 1):min(points, floor(Int, value) + 1)
       iseven(length(subset) - j) && j - 1 < value < j + 1 && (in_band[j + 1] += 1)
     end
   end
-  complement(j) = binomial(BigInt(N), j) - in_band[j + 1]
+  complement(j) = binomial(BigInt(points), j) - in_band[j + 1]
   multiplicity(j) = sum(((i + 2) ÷ 2) * complement(j - i) for i in 0:j; init=BigInt(0))
 
   base = if genus == 0
@@ -798,8 +798,8 @@ function moduli_parabolic_vector_bundles_rank_two(genus::Integer, weights)
   end
 
   result =
-    base * Pn(1)^N + sum(
-      (multiplicity(j) * jacobian(genus)(genus + j) for j in 0:(N - 3));
+    base * Pn(1)^points + sum(
+      (multiplicity(j) * jacobian(genus)(genus + j) for j in 0:(points - 3));
       init=zero(HodgeDiamond),
     )
   arises_from_variety(result) ||
@@ -1035,6 +1035,13 @@ _general_linear(m::Int) =
 
 Turn a linear functional on dimension vectors into a slope-stability function, for use as
 the `mu` keyword of [`quiver_moduli`](@ref).
+
+# Examples
+
+```jldoctest
+julia> slope((1, -1))((2, 1))
+1//3
+```
 """
 slope(theta) = e -> sum(theta[i] * e[i] for i in eachindex(e))//sum(e)
 
@@ -1361,7 +1368,7 @@ function _intersection_quiver_moduli(
   total = get(logarithm, target, zero(Kw))
   common = gcd(target)
   for k in 2:common
-    is_zero(common % k) || continue
+    iszero(common % k) || continue
     mobius = _mobius(k)
     iszero(mobius) && continue
     total += Kw(mobius)//k * _adams(get(logarithm, target .÷ k, zero(Kw)), k)
@@ -1375,7 +1382,7 @@ function _intersection_quiver_moduli(
   # these Hodge structures are of Hodge--Tate type, so the answer has to be a polynomial in
   # w^2; that is a real check on everything upstream
   poincare = _lefschetz_numerator(result)
-  all(is_zero(coeff(poincare, i)) for i in 1:2:degree(poincare)) ||
+  all(iszero(coeff(poincare, i)) for i in 1:2:degree(poincare)) ||
     error("intersection cohomology in odd degree")
   return diagonal_polynomial(
     _integral(coeff(poincare, 2i)) for i in 0:(degree(poincare) ÷ 2)

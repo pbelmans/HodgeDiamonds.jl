@@ -8,8 +8,8 @@
 # ``(\dim X, \dim X)``. So we work with polynomials truncated at ``N = \dim X``,
 # which is exact rather than approximate, stored densely.
 #
-# The `*_CACHE` dictionaries here and in the other files memoise pure functions of small
-# integers. They are plain `Dict`s, so none of this is safe to call from several threads at
+# The `*_CACHE` dictionaries here and in the other files memoise pure functions. They are
+# plain `Dict`s, so none of this is safe to call from several threads at
 # once; a lock per cache is the fix if that ever matters.
 
 # ── dense truncated bivariate polynomials ────────────────────────────────────────
@@ -17,13 +17,15 @@
 # `coefficients[i + 1, j + 1]` is the coefficient of ``x^i y^j``, and terms of exponent
 # greater than `N` are dropped.
 
-zero_coefficients(::Type{T}, size::Int) where {T<:Number} = zeros(T, size, size)
-zero_coefficients(size::Int) = zero_coefficients(BigInt, size)
+# The argument is the side length of the matrix, that is one more than the truncation
+# degree `N` that the rest of this file takes.
+zero_coefficients(::Type{T}, side::Int) where {T<:Number} = zeros(T, side, side)
+zero_coefficients(side::Int) = zero_coefficients(BigInt, side)
 
 # `zeros` would put one shared `BigInt` in every slot, which the in-place kernels below
 # would then corrupt, so give each entry its own.
-zero_coefficients(::Type{BigInt}, size::Int) =
-  BigInt[BigInt(0) for _ in 1:size, _ in 1:size]
+zero_coefficients(::Type{BigInt}, side::Int) =
+  BigInt[BigInt(0) for _ in 1:side, _ in 1:side]
 
 function dense_monomial(i::Int, j::Int, coefficient::T, N::Int) where {T<:Number}
   dense = zero_coefficients(T, N + 1)
@@ -35,21 +37,21 @@ dense_one(::Type{T}, N::Int) where {T<:Number} = dense_monomial(0, 0, one(T), N)
 dense_one(N::Int) = dense_one(BigInt, N)
 
 """
-    multiply_truncated(first, second, N)
+    multiply_truncated(left, right, N)
 
 Product of two dense bivariate polynomials, truncated to bidegree at most `(N, N)`.
 
-Zero coefficients are skipped, so the cost is `nnz(first) * nnz(second)`: multiplying a
-dense accumulator by a sparse factor is cheap, which is the access pattern of every
-caller.
+Zero coefficients are skipped, so the cost counts only the non-zero terms of each factor:
+multiplying a dense accumulator by a sparse factor is cheap, which is the access pattern of
+every caller.
 """
-function multiply_truncated(first::Matrix{T}, second::Matrix{T}, N::Int) where {T<:Number}
+function multiply_truncated(left::Matrix{T}, right::Matrix{T}, N::Int) where {T<:Number}
   product = zero_coefficients(T, N + 1)
-  @inbounds for column in axes(second, 2), rowindex in axes(second, 1)
-    coefficient = second[rowindex, column]
+  @inbounds for column in axes(right, 2), rowindex in axes(right, 1)
+    coefficient = right[rowindex, column]
     iszero(coefficient) && continue
-    for other_column in axes(first, 2), other_row in axes(first, 1)
-      value = first[other_row, other_column]
+    for other_column in axes(left, 2), other_row in axes(left, 1)
+      value = left[other_row, other_column]
       iszero(value) && continue
       i = other_row + rowindex - 1
       j = other_column + column - 1
@@ -170,12 +172,12 @@ function series_geometric(::Type{T}, e::Int, N::Int) where {T<:Number}
 end
 series_geometric(e::Int, N::Int) = series_geometric(BigInt, e, N)
 
-function series_multiply(first::Vector{T}, second::Vector{T}, N::Int) where {T<:Number}
+function series_multiply(left::Vector{T}, right::Vector{T}, N::Int) where {T<:Number}
   product = zeros(T, N + 1)
-  @inbounds for i in eachindex(first)
-    iszero(first[i]) && continue
-    for j in 1:min(length(second), N + 2 - i)
-      iszero(second[j]) || (product[i + j - 1] += first[i] * second[j])
+  @inbounds for i in eachindex(left)
+    iszero(left[i]) && continue
+    for j in 1:min(length(right), N + 2 - i)
+      iszero(right[j]) || (product[i + j - 1] += left[i] * right[j])
     end
   end
   return product
@@ -208,7 +210,8 @@ extent(dense::AbstractMatrix, N::Int) = min(N + 1, size(dense, 1))
 
 "Zero the leading corner of `dense`, keeping GMP's limb storage."
 function zero_corner!(dense::Matrix{BigInt}, N::Int)
-  @inbounds for j in 1:extent(dense, N), i in 1:extent(dense, N)
+  reach = extent(dense, N)
+  @inbounds for j in 1:reach, i in 1:reach
     MPZ.set_si!(dense[i, j], 0)
   end
   return dense
@@ -239,25 +242,25 @@ and `BigInt(x::BigInt)` returns `x` itself.
 own_copy(dense::Matrix{BigInt}) = map(value -> MPZ.set!(BigInt(), value), dense)
 
 """
-    multiply_truncated!(product, first, second, N, scratch)
+    multiply_truncated!(product, left, right, N, scratch)
 
 Write the product of two dense bivariate polynomials, truncated to bidegree at most
 `(N, N)`, into `product`, which may be any buffer at least that large.
 """
 function multiply_truncated!(
   product::Matrix{BigInt},
-  first::Matrix{BigInt},
-  second::Matrix{BigInt},
+  left::Matrix{BigInt},
+  right::Matrix{BigInt},
   N::Int,
   scratch::BigInt,
 )
   zero_corner!(product, N)
-  reach = extent(first, N)
-  @inbounds for j in 1:extent(second, N), i in 1:extent(second, N)
-    coefficient = second[i, j]
+  reach, span = extent(left, N), extent(right, N)
+  @inbounds for j in 1:span, i in 1:span
+    coefficient = right[i, j]
     iszero(coefficient) && continue
     for l in 1:min(reach, N + 2 - j), k in 1:min(reach, N + 2 - i)
-      value = first[k, l]
+      value = left[k, l]
       iszero(value) && continue
       MPZ.mul!(scratch, coefficient, value)
       MPZ.add!(product[k + i - 1, l + j - 1], scratch)
@@ -266,8 +269,8 @@ function multiply_truncated!(
   return product
 end
 
-multiply_truncated(first::Matrix{BigInt}, second::Matrix{BigInt}, N::Int) =
-  multiply_truncated!(zero_coefficients(BigInt, N + 1), first, second, N, BigInt())
+multiply_truncated(left::Matrix{BigInt}, right::Matrix{BigInt}, N::Int) =
+  multiply_truncated!(zero_coefficients(BigInt, N + 1), left, right, N, BigInt())
 
 """
     multiply_by_lefschetz_series!(product, dense, series, N, scratch)
@@ -283,7 +286,8 @@ function multiply_by_lefschetz_series!(
   scratch::BigInt,
 )
   zero_corner!(product, N)
-  @inbounds for j in 1:extent(dense, N), i in 1:extent(dense, N)
+  reach = extent(dense, N)
+  @inbounds for j in 1:reach, i in 1:reach
     value = dense[i, j]
     iszero(value) && continue
     for power in 0:(N + 1 - max(i, j))

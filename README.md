@@ -50,8 +50,9 @@ Hodge diamonds are stored as their Hodge--Poincaré polynomial in `ZZ[x, y]`, so
 union is addition, product of varieties is multiplication, and a Lefschetz twist is
 multiplication by `(xy)^k`. Dependencies are
 [AbstractAlgebra.jl](https://github.com/Nemocas/AbstractAlgebra.jl),
-[Semisimple.jl](https://github.com/HomogeneousTools/Semisimple.jl) and
-[Combinatorics.jl](https://github.com/JuliaMath/Combinatorics.jl), all pure Julia.
+[Semisimple.jl](https://github.com/HomogeneousTools/Semisimple.jl),
+[Combinatorics.jl](https://github.com/JuliaMath/Combinatorics.jl) and
+[PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl), all pure Julia.
 
 ## License
 

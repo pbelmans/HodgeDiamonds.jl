@@ -48,7 +48,7 @@ include("varieties.jl")
 include("homogeneous.jl")
 include("moduli.jl")
 
-# ── exports from diamond.jl ─────────────────────────────────────────────────────
+# ── exports from diamond.jl and hochschild.jl ───────────────────────────────────
 
 export HodgeDiamond, HochschildHomology
 export from_positive

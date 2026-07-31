@@ -218,6 +218,23 @@ end
     lagrangian_grassmannian(n)
 
 Shorthand for the symplectic Grassmannian of Lagrangian subspaces.
+
+# Examples
+
+The Lagrangian Grassmannian has dimension ``\\binom{n+1}{2}``:
+
+```jldoctest
+julia> lagrangian_grassmannian(1) == Pn(1)
+true
+
+julia> [dimension(lagrangian_grassmannian(n)) for n in 1:5]
+5-element Vector{Int64}:
+  1
+  3
+  6
+ 10
+ 15
+```
 """
 lagrangian_grassmannian(n::Integer) = symplectic_grassmannian(n, 2n)
 
@@ -238,17 +255,21 @@ closed orbit ``Z``.
 function horospherical(label::AbstractString)
   # not supposed to be 100% robust
   which = parse(Int, label[2:2])
-  which == 1 && begin
-    n = label[4:(end - 1)]
-    return horospherical("B$n", parse(Int, n) - 1, parse(Int, n))
+  # only X1 and X3 carry parenthesised arguments
+  arguments() = split(label[4:(end - 1)], ",")
+  if which == 1
+    n = parse(Int, arguments()[1])
+    return horospherical("B$n", n - 1, n)
+  elseif which == 2
+    return horospherical("B3", 1, 3)
+  elseif which == 3
+    rank, m = arguments()
+    return horospherical("C$rank", parse(Int, m), parse(Int, m) - 1)
+  elseif which == 4
+    return horospherical("F4", 2, 3)
+  elseif which == 5
+    return horospherical("G2", 1, 2)
   end
-  which == 2 && return horospherical("B3", 1, 3)
-  which == 3 && begin
-    inner = split(label[4:(end - 1)], ",")
-    return horospherical("C$(inner[1])", parse(Int, inner[2]), parse(Int, inner[2]) - 1)
-  end
-  which == 4 && return horospherical("F4", 2, 3)
-  which == 5 && return horospherical("G2", 1, 2)
   throw(ArgumentError("unknown horospherical variety $label"))
 end
 
