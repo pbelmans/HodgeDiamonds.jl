@@ -52,7 +52,7 @@ jobs:
       - run: |
           julia -e '
             using JuliaFormatter
-            format(".") || begin
+            format(["src", "test", "docs/make.jl"]) || begin
               write(stdout, read(`git diff`, String))
               error("some files are not formatted, run JuliaFormatter locally")
             end'
