@@ -309,6 +309,10 @@ storing it as `(2s+1)²` rather than `(2n+1)²` cuts the work by an order of mag
 Each factor is expanded by the binomial series (valid for negative exponents too), whose
 coefficients are single monomials, so multiplying it in is an index shift and a scaled add
 rather than a polynomial multiplication.
+
+A factor contributes the identity in its ``t^0`` term, so it can be multiplied in without
+a second copy of the accumulator: going down in `s` leaves every source coefficient
+``t^{s-\\text{power}\\cdot k}`` untouched until it has been used.
 """
 hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int) =
   with_fast_integers(T -> _hilbn_series(T, hodge_numbers, n))
@@ -317,7 +321,6 @@ function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {
   n == 0 && return [dense_monomial(0, 0, one(T), 0)]
   accumulator = [zero_coefficients(T, 2s + 1) for s in 0:n]
   accumulator[1][1, 1] = one(T)
-  scratch = [zero_coefficients(T, 2s + 1) for s in 0:n]
   for k in 1:n, p in 0:2, q in 0:2
     hodge_number = hodge_numbers[p + 1, q + 1]
     iszero(hodge_number) && continue
@@ -328,14 +331,11 @@ function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {
       T(falling_binomial(exponent, power) * BigInt(epsilon)^power) for
       power in 0:maximum_power
     ]
-    for s in 0:n
-      fill!(scratch[s + 1], 0)
-    end
-    for s in 0:n, power in 0:min(maximum_power, fld(s, k))
+    for s in n:-1:0, power in 1:min(maximum_power, fld(s, k))
       coefficient = factor[power + 1]
       iszero(coefficient) && continue
       source = accumulator[s - power * k + 1]
-      destination = scratch[s + 1]
+      destination = accumulator[s + 1]
       shift_a, shift_b = power * (p + k - 1), power * (q + k - 1)
       width = size(source, 1)
       @inbounds for j in 1:width, i in 1:width
@@ -344,7 +344,6 @@ function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {
         destination[i + shift_a, j + shift_b] += coefficient * value
       end
     end
-    accumulator, scratch = scratch, accumulator
   end
   return accumulator
 end
