@@ -542,7 +542,7 @@ Hodge diamond of a secondary Kodaira surface.
 These are non-Kähler surfaces with ``\\mathrm{b}_1=1`` and ``\\mathrm{b}_2=0``, so they
 have the same Hodge diamond as the Hopf and Inoue surfaces.
 """
-kodaira_secondary() = HodgeDiamond([1 1 0; 0 0 0; 0 1 1])
+kodaira_secondary() = inoue()
 
 # ── weighted hypersurfaces and cyclic covers ─────────────────────────────────────
 
