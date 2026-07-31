@@ -22,6 +22,8 @@ makedocs(;
     "Constructions" => "constructions.md",
   ],
   checkdocs=:exports,
+  # the test suite doctests the package root, which covers these pages too
+  doctest=false,
 )
 
 deploydocs(; repo="github.com/pbelmans/HodgeDiamonds.jl", devbranch="main")
