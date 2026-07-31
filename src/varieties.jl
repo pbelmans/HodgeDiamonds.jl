@@ -167,6 +167,7 @@ true
 ```
 """
 function symn(genus::Integer, n::Integer)
+  genus >= 0 || throw(ArgumentError("genus needs to be non-negative"))
   n < 0 && return zero(HodgeDiamond)
   return HodgeDiamond([_symn_hodge(genus, n, p, q) for p in 0:n, q in 0:n])
 end

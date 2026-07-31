@@ -1183,6 +1183,9 @@ function quiver_moduli(Q, d; mu=nothing)
 
   euler_form = _euler_form(adjacency)
   target = [Int(di) for di in d]
+  # a zero dimension vector has no slope, and a negative one no meaning
+  all(>=(0), target) && !iszero(target) ||
+    throw(ArgumentError("dimension vector needs to be non-zero and non-negative"))
   stability = mu === nothing ? _canonical_stability(euler_form, target) : mu
 
   # a semistable representation is strictly semistable exactly when it has a proper

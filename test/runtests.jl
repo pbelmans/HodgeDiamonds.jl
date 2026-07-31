@@ -174,6 +174,10 @@ const R, x, y = hodge_ring()
     @test all(symn(g, 1) == curve(g) for g in 0:9)
     @test symn(4, 0) == point()
     @test symn(4, -1) == zero(HodgeDiamond)
+    @test_throws ArgumentError symn(-1, 2)
+    @test_throws ArgumentError curve(-1)
+    @test_throws ArgumentError surface(1, -1, 1)
+    @test_throws ArgumentError Pn(-1)
   end
 
   @testset "complete intersections" begin
@@ -308,6 +312,9 @@ const R, x, y = hodge_ring()
     )
     @test_throws ArgumentError orthogonal_grassmannian(3, 6)
     @test_throws ArgumentError orthogonal_grassmannian(3, 5)
+    @test_throws ArgumentError symplectic_grassmannian(3, 4)
+    @test_throws ArgumentError symplectic_grassmannian(1, 5)
+    @test_throws ArgumentError grassmannian(3, 2)
     @test odd_symplectic_grassmannian(1, 5) == Pn(4)
     @test horospherical("X5") == horospherical("G2", 1, 2)
     @test dimension(horospherical("X4")) == 23
@@ -368,6 +375,8 @@ const R, x, y = hodge_ring()
     @test quiver_moduli(flags(5, 3), (1, 4, 3, 1)) == partial_flag_variety("A4", [2])
 
     @test_throws ArgumentError quiver_moduli(kronecker(2), (1, 1, 1))
+    @test_throws ArgumentError quiver_moduli(kronecker(2), (0, 0))
+    @test_throws ArgumentError quiver_moduli(kronecker(2), (-1, 1))
 
     # in the presence of strictly semistable representations the answer is intersection
     # cohomology, via Meinhardt--Reineke; the two formulas have to agree wherever both

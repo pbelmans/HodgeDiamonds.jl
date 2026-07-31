@@ -186,10 +186,31 @@ end
 Hodge diamond of the symplectic Grassmannian ``\\operatorname{SGr}(k,n)`` of
 `k`-dimensional subspaces of an `n`-dimensional vector space, isotropic with respect to a
 non-degenerate skew-symmetric bilinear form.
+
+# Examples
+
+Every line is isotropic for a symplectic form, so for ``k=1`` we get projective space:
+
+```jldoctest
+julia> all(symplectic_grassmannian(1, 2n) == Pn(2n - 1) for n in 1:5)
+true
+```
+
+The dimension is ``k(n-k)-\\binom{k}{2}``:
+
+```jldoctest
+julia> [dimension(symplectic_grassmannian(k, 8)) for k in 1:4]
+4-element Vector{Int64}:
+  7
+ 11
+ 12
+ 10
+```
 """
 function symplectic_grassmannian(k::Integer, n::Integer)
   iseven(n) || throw(ArgumentError("n needs to be even"))
   half = n ÷ 2
+  0 <= k <= half || throw(ArgumentError("need 0 ≤ k ≤ n/2"))
   return partial_flag_variety("C$half", [i for i in 1:half if i != k])
 end
 
