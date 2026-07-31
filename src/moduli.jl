@@ -385,25 +385,32 @@ function _del_bano(r::Int, d::Int, g::Int)
 
   # del Baño's second factor splits over the parts of the composition, so each part
   # value is computed once instead of once per composition
+  # one scratch integer and two buffers, reused for every product below. Whatever outlives
+  # a buffer is copied out by value, since sharing `BigInt` objects with a buffer would let
+  # the next `zero_corner!` erase it.
+  scratch = BigInt()
+  left, right, factor = (zero_coefficients(N + 1) for _ in 1:3)
+
   part_numerator = Dict{Int,Matrix{BigInt}}()
   part_denominator = Dict{Int,Vector{BigInt}}()
   for part in 1:r
-    numerator = dense_one(N)
+    numerator, buffer = copy_corner!(left, dense_one(N), N), right
     denominator = series_one(N)
     for i in 1:(part - 1)
       # (1 + x^i y^{i+1})^g (1 + x^{i+1} y^i)^g
-      factor = zero_coefficients(N + 1)
+      zero_corner!(factor, N)
       for s in 0:g, u in 0:g
         a, b = s * i + u * (i + 1), s * (i + 1) + u * i
         (a <= N && b <= N) || continue
         factor[a + 1, b + 1] += binomial(BigInt(g), s) * binomial(BigInt(g), u)
       end
-      numerator = multiply_truncated(numerator, factor, N)
+      multiply_truncated!(buffer, numerator, factor, N, scratch)
+      numerator, buffer = buffer, numerator
       for exponent in (i, i + 1)
         denominator = series_multiply(denominator, series_one_minus_power(exponent, N), N)
       end
     end
-    part_numerator[part] = numerator
+    part_numerator[part] = own_copy(numerator)
     part_denominator[part] = denominator
   end
 
@@ -421,6 +428,7 @@ function _del_bano(r::Int, d::Int, g::Int)
 
   numerator_cache = Dict{Tuple{Vector{Int},Int},Matrix{BigInt}}()
   total = zero_coefficients(N + 1)
+  work = zero_coefficients(N + 1)
   for composition in compositions(r)
     k = length(composition)
 
@@ -444,11 +452,12 @@ function _del_bano(r::Int, d::Int, g::Int)
     # the numerator depends only on the multiset of parts, not their order, so a
     # rank r sees p(r) products rather than 2^(r-1) of them
     piece = get!(numerator_cache, (sort(composition), M)) do
-      product = length_numerator[k]
+      product, buffer = copy_corner!(left, length_numerator[k], M), right
       for part in composition
-        product = multiply_truncated(product, part_numerator[part], M)
+        multiply_truncated!(buffer, product, part_numerator[part], M, scratch)
+        product, buffer = buffer, product
       end
-      product
+      own_copy(product)
     end
 
     # every denominator is a polynomial in L = xy, so collect and invert once
@@ -470,13 +479,13 @@ function _del_bano(r::Int, d::Int, g::Int)
         M,
       )
     end
-    piece = multiply_by_lefschetz_series(
-      piece, series_inverse(denominator_series, M), M
+    twisted = multiply_by_lefschetz_series!(
+      work, piece, series_inverse(denominator_series, M), M, scratch
     )
 
     parity = (-1)^(k - 1)
-    for j in axes(piece, 2), i in axes(piece, 1)
-      value = piece[i, j]
+    for j in 1:(M + 1), i in 1:(M + 1)
+      value = twisted[i, j]
       iszero(value) && continue
       total[i + shift, j + shift] += parity * value
     end
