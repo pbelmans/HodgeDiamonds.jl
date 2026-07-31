@@ -1,4 +1,5 @@
 using AbstractAlgebra
+using Combinatorics: multiexponents
 using Documenter
 using HodgeDiamonds
 using Test
@@ -355,8 +356,7 @@ const R, x, y = hodge_ring()
     @test quiver_moduli(flags(3, 2), (1, 2, 1)) == fano_threefold(2, 32)
     @test quiver_moduli(flags(5, 3), (1, 4, 3, 1)) == partial_flag_variety("A4", [2])
 
-    @test_throws ArgumentError quiver_moduli([0 1; 1 0], (1, 1))
-    @test_throws ArgumentError quiver_moduli([1 1; 0 0], (1, 1))
+    @test_throws ArgumentError quiver_moduli(kronecker(2), (1, 1, 1))
 
     # in the presence of strictly semistable representations the answer is intersection
     # cohomology, via Meinhardt--Reineke; the two formulas have to agree wherever both
@@ -409,6 +409,45 @@ const R, x, y = hodge_ring()
       # projective variety still satisfies Poincaré duality
       @test all(p == q || X[p, q] == 0 for p in 0:n, q in 0:n)
       @test all(X[p, p] == X[n - p, n - p] >= 0 for p in 0:n)
+    end
+
+    # a quiver need not be acyclic, but then the moduli space is affine rather than
+    # projective and the diamond only records Betti numbers
+    loops(m) = [m;;]
+    @test !arises_from_variety(quiver_moduli(loops(2), (2,)))
+    @test !arises_from_variety(quiver_moduli([0 1; 1 0], (1, 1)))
+
+    # spaces of matrix invariants, against the closed form of Theorem 8.2 of [MR4000572].
+    # Its prefactor reads v^dim where it has to be v^(2*dim): for `d = 1` the moduli space
+    # is the affine space A^m, of compactly supported Poincaré polynomial v^(2m), and for
+    # `m = d = 2` it is A^5 because the five traces and determinants are independent.
+    @test polynomial(quiver_moduli(loops(3), (1,))) == x^3 * y^3
+    @test polynomial(quiver_moduli(loops(2), (2,))) == x^5 * y^5
+    function matrix_invariants(m::Int, d::Int)
+      classes, seen = Int[], Set{Vector{Int}}()
+      for exponents in multiexponents(d, (m - 1) * d)
+        a = collect(exponents)
+        a in seen && continue
+        rotations = [circshift(a, k) for k in 0:(d - 1)]
+        union!(seen, rotations)
+        # primitive, or twice a primitive sequence of length d/2
+        period = minimum(k for k in 1:d if circshift(a, k) == a)
+        period == d || (iseven(m) && d % 4 == 2 && period == d ÷ 2) || continue
+        push!(classes, minimum(sum((d - i) * r[i] for i in 1:d) for r in rotations))
+      end
+      S, u = polynomial_ring(QQ, :u)
+      z = fraction_field(S)(u)
+      return z^(2 * ((m - 1) * d^2 + 1)) * (1 - z^-2)//(1 - z^(-2d)) *
+             sum((z^(-2c) for c in classes); init=zero(z))
+    end
+    for m in 2:4, d in 1:4
+      expected = matrix_invariants(m, d)
+      @test isone(denominator(expected))
+      # the closed form lives in a square root of the Lefschetz class, so halve exponents
+      f = numerator(expected)
+      @test polynomial(quiver_moduli(loops(m), (d,))) == sum(
+        (Base.numerator(coeff(f, 2i)) * x^i * y^i for i in 0:(degree(f) ÷ 2)); init=zero(R)
+      )
     end
   end
 
