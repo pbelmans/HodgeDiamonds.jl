@@ -44,7 +44,6 @@ const HD = HodgeDiamonds
       @test X - X == zero(HodgeDiamond)
       @test 2 * X == X + X
       @test X^3 == X * X * X
-      @test X × Y == X * Y
     end
     @test iszero(zero(HodgeDiamond))
     @test one(HodgeDiamond) == point()

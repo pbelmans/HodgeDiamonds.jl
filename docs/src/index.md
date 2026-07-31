@@ -78,7 +78,7 @@ julia> X = from_matrix([1 2; 2 1])
   2       2
       1
 
-julia> euler(X × X)
+julia> euler(X * X)
 4
 ```
 
@@ -129,7 +129,6 @@ A few Unicode aliases are exported for the notation one would write on a blackbo
 |:------------- |:-------------------------------------------------- |
 | `𝕃`           | the Lefschetz class, [`lefschetz`](@ref)           |
 | `ℙ(n)`        | projective space, [`Pn`](@ref)                     |
-| `X × Y`       | product of varieties, `X * Y`                      |
 | `χ(X)`        | holomorphic Euler characteristic                    |
 | `χ_top(X)`    | topological Euler characteristic                    |
 | `χ_y(X)`      | Hirzebruch's ``\chi_y``-genus                       |

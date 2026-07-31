@@ -11,7 +11,6 @@ module HodgeDiamonds
 
 using AbstractAlgebra
 using Combinatorics: multiexponents, partitions, powerset
-import LinearAlgebra: cross, ×
 using PrecompileTools: @compile_workload
 using Semisimple: Semisimple
 
@@ -43,6 +42,7 @@ hodge_ring() = (R, x, y)
 
 include("internals.jl")
 include("diamond.jl")
+include("hochschild.jl")
 include("varieties.jl")
 include("homogeneous.jl")
 include("moduli.jl")
@@ -74,7 +74,7 @@ export blowup, bundle, mirror
 
 # ── exports from varieties.jl ───────────────────────────────────────────────────
 
-export 𝕃, ℙ, ×, χ, χ_top, χ_y
+export 𝕃, ℙ, χ, χ_top, χ_y
 export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surface
 export K3, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
 export complete_intersection, cyclic_cover, hypersurface, weighted_hypersurface
