@@ -265,12 +265,11 @@ true
 sym(h::HochschildHomology, k::Integer) = symmetric_power(h, k)
 
 function Base.show(io::IO, ::MIME"text/plain", h::HochschildHomology)
-  if iszero(h)
-    print(io, _render([["0"], ["0"]]; centered=false))
-    return nothing
-  end
+  iszero(h) && return print(io, _render(fill("0", 2, 1); centered=false))
   n = dimension(h)
-  table = [[string(i) for i in (-n):n], [string(h[i]) for i in (-n):n]]
+  # the degrees on the first line, the dimensions underneath
+  table = permutedims([string(i) for i in (-n):n, _ in 1:1])
+  table = vcat(table, permutedims([string(h[i]) for i in (-n):n, _ in 1:1]))
   return print(io, _render(table; centered=false))
 end
 

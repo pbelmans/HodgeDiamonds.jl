@@ -801,55 +801,33 @@ function _pad(text::AbstractString, width::Int, centered::Bool)
   return rpad(lpad(text, length(text) + (width - length(text)) ÷ 2), width)
 end
 
-function _render(table::Vector{Vector{String}}; centered::Bool=true)
-  isempty(table) && return ""
-  columns = maximum(length, table)
-  widths = [maximum(length(get(cells, j, "")) for cells in table) for j in 1:columns]
-  lines = map(table) do cells
-    padded = (_pad(get(cells, j, ""), widths[j], centered) for j in 1:columns)
-    String(rstrip("  " * join(padded, "   ")))
+function _render(table::AbstractMatrix{<:AbstractString}; centered::Bool=true)
+  widths = [maximum(length, view(table, :, j)) for j in axes(table, 2)]
+  lines = map(axes(table, 1)) do i
+    padded = (_pad(table[i, j], widths[j], centered) for j in axes(table, 2))
+    rstrip("  " * join(padded, "   "))
   end
   return join(lines, "\n")
 end
 
+# The diamond as a square of cells: row `i` holds the antidiagonal ``p + q = i``, indented
+# by `abs(d - i)` and with one blank column between consecutive entries.
 function _grid(X::HodgeDiamond; hide_zeroes::Bool, quarter::Bool)
   d = _top_degree(X)
   M = Matrix(X)
-  table = Vector{Vector{String}}()
-  if is_zero(X)
-    push!(table, ["0"])
-  else
-    for i in 0:(2d)
-      cells = fill("", abs(d - i))
-      for j in max(0, i - d):min(i, d)
-        push!(cells, string(M[j + 1, i - j + 1]))
-        push!(cells, "")
-      end
-      push!(table, cells)
-    end
+  table = fill("", 2d + 1, 2d + 1)
+  for i in 0:(2d), j in max(0, i - d):min(i, d)
+    entry = M[j + 1, i - j + 1]
+    hide_zeroes && is_zero(entry) && continue
+    table[i + 1, abs(d - i) + 2 * (j - max(0, i - d)) + 1] = string(entry)
   end
 
-  # make every row exactly 2d + 1 wide
-  for cells in table
-    append!(cells, fill("", max(0, 2d + 1 - length(cells))))
-    resize!(cells, min(length(cells), 2d + 1))
-  end
-
-  hide_zeroes && for cells in table, k in eachindex(cells)
-    cells[k] == "0" && (cells[k] = "")
-  end
-
-  quarter && (table = [cells[1:(d + 1)] for cells in table[1:(d + 1)]])
+  quarter && (table = table[1:(d + 1), 1:(d + 1)])
 
   if hide_zeroes
-    # drop the leading and trailing blanks common to every row, to align left
-    leading = minimum(
-      something(findfirst(!isempty, cells), length(cells) + 1) - 1 for cells in table
-    )
-    trailing = minimum(
-      length(cells) - something(findlast(!isempty, cells), 0) for cells in table
-    )
-    table = [cells[(leading + 1):(length(table) - trailing)] for cells in table]
+    # align left by dropping the columns which are blank in every row
+    used = findall(j -> any(!isempty, view(table, :, j)), axes(table, 2))
+    table = isempty(used) ? table[:, 1:0] : table[:, first(used):last(used)]
   end
 
   return table
@@ -940,11 +918,10 @@ julia> show(stdout, MIME("text/latex"), K3())
 """
 function Base.show(io::IO, ::MIME"text/latex", X::HodgeDiamond)
   table = _grid(X; hide_zeroes=HIDE_ZEROES[], quarter=QUARTER[])
-  println(io, "\\begin{tabular}{", "c"^maximum(length, table), "}")
-  for cells in table
-    println(
-      io, join((isempty(cell) ? "" : "\$$cell\$" for cell in cells), " & "), " \\\\"
-    )
+  println(io, "\\begin{tabular}{", "c"^size(table, 2), "}")
+  for i in axes(table, 1)
+    cells = (isempty(cell) ? "" : "\$$cell\$" for cell in view(table, i, :))
+    println(io, join(cells, " & "), " \\\\")
   end
   return print(io, "\\end{tabular}")
 end
