@@ -5,7 +5,7 @@ Work with Hodge diamonds of smooth projective varieties, with many varieties and
 constructions built in. A Julia translation of the
 [Hodge diamond cutter](https://github.com/pbelmans/hodge-diamond-cutter).
 
-See the [documentation](https://pbelmans.github.io/HodgeDiamonds.jl) to get started.
+See the [documentation](https://pbelmans.ncag.info/HodgeDiamonds.jl) to get started.
 """
 module HodgeDiamonds
 

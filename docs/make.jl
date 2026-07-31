@@ -11,7 +11,7 @@ makedocs(;
   authors="Pieter Belmans",
   sitename="HodgeDiamonds.jl",
   format=Documenter.HTML(;
-    canonical="https://pbelmans.github.io/HodgeDiamonds.jl",
+    canonical="https://pbelmans.ncag.info/HodgeDiamonds.jl",
     edit_link="main",
     assets=String[],
   ),

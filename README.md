@@ -1,7 +1,7 @@
 # HodgeDiamonds.jl
 
 [![CI](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/CI.yml)
-[![Documentation](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/docs.yml/badge.svg)](https://pbelmans.github.io/HodgeDiamonds.jl)
+[![Documentation](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/docs.yml/badge.svg)](https://pbelmans.ncag.info/HodgeDiamonds.jl)
 [![codecov](https://codecov.io/gh/pbelmans/HodgeDiamonds.jl/graph/badge.svg)](https://codecov.io/gh/pbelmans/HodgeDiamonds.jl)
 
 A tool to work with Hodge diamonds, with many varieties and constructions built in. A Julia
@@ -41,7 +41,7 @@ julia> betti(moduli_vector_bundles(3, 1, 4))[4]
 8
 ```
 
-See the [documentation](https://pbelmans.github.io/HodgeDiamonds.jl) for what is available
+See the [documentation](https://pbelmans.ncag.info/HodgeDiamonds.jl) for what is available
 and for the interface differences from the Sage version.
 
 ## Design
