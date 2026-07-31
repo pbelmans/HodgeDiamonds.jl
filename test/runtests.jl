@@ -50,6 +50,12 @@ const R, x, y = hodge_ring()
     @test one(HodgeDiamond) == point()
     @test Pn(1) - 1 == lefschetz()
     @test hash(K3()) == hash(hypersurface(4, 2))
+    @test -K3() + K3() == zero(HodgeDiamond)
+    @test point() == 1 && 1 == point()
+    @test !(K3() == 1) && !(1 == K3())
+    # the instance methods, next to the ones on the type
+    @test zero(K3()) == zero(HodgeDiamond)
+    @test one(K3()) == one(HodgeDiamond)
   end
 
   @testset "twisting and evaluation" begin
@@ -135,8 +141,15 @@ const R, x, y = hodge_ring()
     @test dimension(h * h) == 4
     @test dimension(h^2) == 4
     @test dimension(sym(h, 2)) == 4
+    @test h - h == zero(HochschildHomology)
     @test dimension(1 + h) == 2
     @test dimension(3 * h) == 2
+    # scalars on either side
+    @test h + 1 == 1 + h
+    @test h * 3 == 3 * h
+    @test collect(h - 1) == BigInt[1, 0, 21, 0, 1]
+    @test zero(h) == zero(HochschildHomology)
+    @test one(h) == one(HochschildHomology)
     @test h^0 == one(HochschildHomology)
     @test HochschildHomology([0, 1, 0]) == HochschildHomology([0, 0, 1, 0, 0])
     @test hash(h) == hash(HochschildHomology([1, 0, 22, 0, 1]))
@@ -283,6 +296,13 @@ const R, x, y = hodge_ring()
     # weights need not be uniform
     @test moduli_parabolic_vector_bundles_rank_two(0, [1//3, 1//4, 2//5, 1//2, 3//7]) ==
       blowup(Pn(2), 4 * point())
+    # below the first wall there is no correction term, and the three genus branches are
+    # the empty diamond, the elliptic curve and the moduli space of vector bundles
+    @test moduli_parabolic_vector_bundles_rank_two(1, [1//4, 1//4]) == curve(1) * Pn(1)^2
+    @test moduli_parabolic_vector_bundles_rank_two(0, [1//4, 1//4]) == zero(HodgeDiamond)
+    @test moduli_parabolic_vector_bundles_rank_two(2, [1//4, 1//4]) ==
+      moduli_vector_bundles(2, 1, 2) * Pn(1)^2
+    @test_throws ErrorException moduli_parabolic_vector_bundles_rank_two(1, fill(1//2, 4))
     @test all(quot_scheme_curve(3, n, 1) == symn(3, n) for n in 0:4)
     @test dimension(quot_scheme_curve(2, 3, 2)) == 6
   end
@@ -316,8 +336,31 @@ const R, x, y = hodge_ring()
     @test_throws ArgumentError symplectic_grassmannian(1, 5)
     @test_throws ArgumentError grassmannian(3, 2)
     @test odd_symplectic_grassmannian(1, 5) == Pn(4)
+    # the five families of [1803.05063], by label and by Dynkin type with two parabolics
     @test horospherical("X5") == horospherical("G2", 1, 2)
     @test dimension(horospherical("X4")) == 23
+    @test horospherical("X2") == horospherical("B3", 1, 3)
+    @test dimension(horospherical("X2")) == 9
+    @test all(dimension(horospherical("X1($n)")) == (n * (n + 3)) ÷ 2 for n in 3:6)
+    @test horospherical("X1(5)") == horospherical("B5", 4, 5)
+    # X3(n, m) in type C is the odd symplectic Grassmannian, of dimension
+    # k(2n + 1 - k) - binomial(k, 2)
+    @test all(
+      odd_symplectic_grassmannian(k, 2n + 1) == horospherical("X3($n,$k)") for n in 2:4 for
+      k in 2:n
+    )
+    @test all(
+      dimension(odd_symplectic_grassmannian(k, 2n + 1)) ==
+      k * (2n + 1 - k) - (k * (k - 1)) ÷ 2 for n in 2:4 for k in 1:n
+    )
+    @test_throws ArgumentError horospherical("X9")
+    @test_throws ArgumentError odd_symplectic_grassmannian(2, 6)
+    # Picard rank one pins down which pairs of parabolics are allowed
+    @test_throws ArgumentError horospherical("B4", 1, 2)
+    @test_throws ArgumentError horospherical("C3", 1, 0)
+    @test_throws ArgumentError horospherical("F4", 1, 2)
+    @test_throws ArgumentError horospherical("G2", 2, 1)
+    @test_throws ArgumentError horospherical("A3", 1, 2)
 
     # the Grassmannian Poincaré polynomial is the Gaussian binomial
     for (k, n) in [(2, 5), (3, 7), (2, 6), (4, 9)]
@@ -508,6 +551,14 @@ const R, x, y = hodge_ring()
     @test HD.q_binomial(5, 0) == one(HD.Rq)
     @test HD.q_binomial(5, 6) == zero(HD.Rq)
     @test evaluate(HD.q_binomial(7, 3), 1) == binomial(7, 3)
+
+    # the Möbius function, which drives the plethystic logarithms. Products of distinct
+    # primes are the interesting case: one factor below the square root and one above.
+    @test [HD._mobius(n) for n in 1:12] == [1, -1, -1, 0, -1, 1, -1, 0, 0, 1, -1, 0]
+    @test HD._mobius(2 * 3 * 5 * 7) == 1
+    @test HD._mobius(2 * 3 * 5) == -1
+    @test HD._mobius(4 * 1009) == 0
+    @test_throws ArgumentError HD._mobius(0)
 
     # compositions and multiplicities
     @test length(HD.compositions(5)) == 16
