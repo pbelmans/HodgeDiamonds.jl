@@ -160,9 +160,7 @@ end
 function Base.:*(g::HochschildHomology, h::HochschildHomology)
   return _from_terms([(i + j, c * d) for (i, c) in _terms(g) for (j, d) in _terms(h)])
 end
-function Base.:^(h::HochschildHomology, k::Integer)
-  return k == 0 ? one(HochschildHomology) : reduce(*, fill(h, k))
-end
+Base.:^(h::HochschildHomology, k::Integer) = prod(Iterators.repeated(h, k); init=one(h))
 
 for operator in (:+, :-, :*)
   @eval Base.$operator(h::HochschildHomology, n::Integer) =

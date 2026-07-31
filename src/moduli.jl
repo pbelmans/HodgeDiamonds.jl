@@ -612,15 +612,8 @@ function seshadris_desingularisation(genus::Integer)
   )
 end
 
-function _shift_series(series::Vector{T}, shift::Int, N::Int) where {T<:Number}
-  return [
-    if (m - shift >= 0 && m - shift + 1 <= length(series))
-      series[m - shift + 1]
-    else
-      zero(T)
-    end for m in 0:N
-  ]
-end
+_shift_series(series::Vector{T}, shift::Int, N::Int) where {T<:Number} =
+  [get(series, m - shift + 1, zero(T)) for m in 0:N]
 
 """
     moduli_parabolic_vector_bundles_rank_two(genus, weights)
