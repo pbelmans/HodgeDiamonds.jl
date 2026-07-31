@@ -517,7 +517,8 @@ end
     row(X, i; truncate = false)
 
 The `i`th row of the Hodge diamond, that is, the Hodge numbers of the Hodge structure on
-cohomology in degree `i`. With `truncate` set, leading and trailing zeroes are omitted.
+cohomology in degree `i`. With `truncate` set, leading and trailing zeroes are omitted,
+independently of each other, so that a row of zeroes truncates to nothing.
 
 Indexing with a single index, as in `X[i]`, gives the same list untruncated.
 
@@ -543,12 +544,10 @@ julia> row(moduli_vector_bundles(3, 1, 9), 3; truncate = true)
 """
 function row(X::HodgeDiamond, i::Integer; truncate::Bool=false)
   entries = X[i]
-  if truncate
-    while length(entries) > 1 && is_zero(first(entries)) && is_zero(last(entries))
-      entries = entries[2:(end - 1)]
-    end
-  end
-  return entries
+  truncate || return entries
+  leading = findfirst(!is_zero, entries)
+  leading === nothing && return empty(entries)
+  return entries[leading:findlast(!is_zero, entries)]
 end
 
 """

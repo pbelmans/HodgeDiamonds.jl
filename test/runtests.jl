@@ -4,6 +4,7 @@ using HodgeDiamonds
 using Test
 
 const HD = HodgeDiamonds
+const R, x, y = hodge_ring()
 
 @testset "HodgeDiamonds.jl" begin
   @testset "doctests" begin
@@ -18,7 +19,6 @@ const HD = HodgeDiamonds
   end
 
   @testset "construction" begin
-    R, x, y = hodge_ring()
     @test from_matrix([1 0 1; 0 20 0; 1 0 1]) == K3()
     @test from_matrix([[1, 0, 1], [0, 20, 0], [1, 0, 1]]) == K3()
     @test from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
@@ -79,6 +79,9 @@ const HD = HodgeDiamonds
     @test all(level(hypersurface(n + 2, n)) == n for n in 0:9)
     @test row(hypersurface(3, 4), 4) == middle(hypersurface(3, 4))
     @test row(moduli_vector_bundles(3, 1, 9), 3; truncate=true) == BigInt[9, 9]
+    # truncation strips both ends independently, whether or not the row is symmetric
+    @test row(from_polynomial(x^2 + x * y^2), 3; truncate=true) == BigInt[1]
+    @test row(K3(), 3; truncate=true) == BigInt[]
 
     # motivic pieces may have negative entries and need not be Serre symmetric
     @test middle(hypersurface(3, 4) - lefschetz()^2) == BigInt[0, 1, 20, 1, 0]
