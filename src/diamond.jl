@@ -796,13 +796,8 @@ end
 # Python's `str.center` does), columns joined by three spaces, trailing space stripped.
 
 function _pad(text::AbstractString, width::Int, centered::Bool)
-  padding = width - length(text)
-  padding <= 0 && return String(text)
-  return if centered
-    " "^(padding ÷ 2) * text * " "^(padding - padding ÷ 2)
-  else
-    text * " "^padding
-  end
+  centered || return rpad(text, width)
+  return rpad(lpad(text, length(text) + (width - length(text)) ÷ 2), width)
 end
 
 function _render(table::Vector{Vector{String}}; centered::Bool=true)
