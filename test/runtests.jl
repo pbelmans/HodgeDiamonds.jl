@@ -148,6 +148,13 @@ const R, x, y = hodge_ring()
     @test hash(h) == hash(HochschildHomology([1, 0, 22, 0, 1]))
     @test length(Dict(h => 1, HochschildHomology([1, 0, 22, 0, 1]) => 2)) == 1
     @test collect(sym(h, 2)) == BigInt[1, 0, 23, 0, 276, 0, 23, 0, 1]
+    @test sym(h, 0) == one(HochschildHomology)
+    @test sym(h, 1) == h
+    # Bridgeland--King--Reid: the symmetric power of D(S) is D(S^[n])
+    @test all(
+      sym(hh(S), n) == hh(hilbn(S, n)) for
+      S in (K3(), Pn(2), curve(1)^2, enriques(), surface(2, 1, 10)), n in 0:3
+    )
     @test repr(MIME("text/plain"), h) ==
       "  -2   -1   0    1   2\n  1    0    22   0   1"
     @test repr(h) == "Hochschild homology vector of dimension 2"

@@ -197,8 +197,18 @@ julia> symmetric_power(hh(K3()), 2)
   -4   -3   -2   -1   0     1   2    3   4
   1    0    23   0    276   0   23   0   1
 ```
+
+Bridgeland--King--Reid says that for a surface the symmetric power of the derived category
+is the derived category of the Hilbert scheme of points, and indeed:
+
+```jldoctest
+julia> all(sym(hh(K3()), n) == hh(hilbn(K3(), n)) for n in 0:3)
+true
+```
 """
 function symmetric_power(h::HochschildHomology, k::Integer)
+  # `partitions(0)` is not usable, and the zeroth symmetric power is the unit anyway
+  is_zero(k) && return one(HochschildHomology)
   n = dimension(h)
   terms = [(i, h[i]) for i in (-n):n if !is_zero(h[i])]
   total = Dict{Int,BigInt}()
