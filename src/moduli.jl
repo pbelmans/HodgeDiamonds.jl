@@ -42,14 +42,7 @@ function hilbn(S::HodgeDiamond, n::Integer)
   n = Int(n)
   hodge_numbers = BigInt[S[p, q] for p in 0:2, q in 0:2]
   top = hilbn_series(hodge_numbers, n)[end]
-  geometric = arises_from_variety(S)
-  M = zero_coefficients(2n + 1)
-  for p in 0:(2n), q in 0:(2n)
-    # use Serre duality, but only when the surface actually satisfies it
-    a, b = geometric ? (min(p, 2n - q), min(q, 2n - p)) : (p, q)
-    M[p + 1, q + 1] = top[a + 1, b + 1]
-  end
-  return HodgeDiamond(M; from_variety=geometric)
+  return HodgeDiamond(dense_to_polynomial(top); from_variety=arises_from_variety(S))
 end
 
 """
