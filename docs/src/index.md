@@ -158,3 +158,12 @@ differs where Julia has a better way of saying something:
     with [`hodge_ring`](@ref).
   - Sage's `HodgeDiamondRing` and `HochschildHomologies` parent objects are gone; Julia
     needs no parents.
+
+## Index
+
+```@docs
+HodgeDiamonds
+```
+
+```@index
+```
