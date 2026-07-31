@@ -10,7 +10,7 @@
 """
     parse_dynkin(label)
 
-Parse a Dynkin type given in Sage's notation, such as `"A5"` or `"E8"`, into the
+Parse a Dynkin type written as usual, such as `"A5"` or `"E8"`, into the
 corresponding Semisimple.jl type.
 
 Semisimple.jl rejects the degenerate labels of low rank, so those are normalised here:
@@ -49,7 +49,7 @@ function parse_dynkin(label::AbstractString)
   throw(ArgumentError("unknown Dynkin type $label"))
 end
 
-# Number of vertices of a Dynkin diagram given in Sage's notation.
+# Number of vertices of a Dynkin diagram given by its label.
 _dynkin_rank(label::AbstractString) = parse(Int, label[2:end])
 
 """
