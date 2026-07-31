@@ -409,11 +409,8 @@ const HD = HodgeDiamonds
             degrees(Semisimple.TypeB{3}())
         @test HD.parse_dynkin("C1") == Semisimple.TypeA{1}()
         @test HD.parse_dynkin("B1") == Semisimple.TypeA{1}()
-        @test HD.parse_dynkin("D3") == Semisimple.TypeA{3}()
+        @test HD.parse_dynkin("D3") == Semisimple.TypeD{3}()
         @test degrees(HD.parse_dynkin("D2")) == [2, 2]
-        # D3 = A3 permutes the vertices, since the D3 diagram is the path 2-1-3
-        @test HD._dynkin_and_vertices("D3", [2, 3])[2] == [1, 3]
-        @test HD._dynkin_and_vertices("B5", [2, 3])[2] == [2, 3]
         @test_throws ArgumentError HD.parse_dynkin("H4")
         @test_throws ArgumentError HD.parse_dynkin("A0")
         @test_throws ArgumentError HD.levi_type(HD.parse_dynkin("A3"), Int[])

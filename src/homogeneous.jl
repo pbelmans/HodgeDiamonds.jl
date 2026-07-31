@@ -13,14 +13,10 @@
 Parse a Dynkin type given in Sage's notation, such as `"A5"` or `"E8"`, into the
 corresponding Semisimple.jl type.
 
-Degenerate labels of low rank are normalised to their honest type, so that
-``\\mathrm{B}_1=\\mathrm{C}_1=\\mathrm{A}_1``,
-``\\mathrm{D}_2=\\mathrm{A}_1\\times\\mathrm{A}_1`` and
-``\\mathrm{D}_3=\\mathrm{A}_3``. Small orthogonal and symplectic Grassmannians reach these.
-
-Beware that the ``\\mathrm{D}_3=\\mathrm{A}_3`` identification permutes the vertices: the
-Bourbaki diagram of ``\\mathrm{D}_3`` is the path ``2-1-3``. Use
-[`_dynkin_and_vertices`](@ref) rather than this function when a vertex set is involved.
+Semisimple.jl rejects the degenerate labels of low rank, so those are normalised here:
+``\\mathrm{B}_1=\\mathrm{C}_1=\\mathrm{A}_1`` and
+``\\mathrm{D}_2=\\mathrm{A}_1\\times\\mathrm{A}_1``. Small orthogonal and symplectic
+Grassmannians reach these.
 
 # Examples
 
@@ -45,7 +41,6 @@ function parse_dynkin(label::AbstractString)
         rank == 2 && return Semisimple.ProductDynkinType(
             Semisimple.TypeA{1}(), Semisimple.TypeA{1}()
         )
-        rank == 3 && return Semisimple.TypeA{3}()
         return Semisimple.TypeD{rank}()
     end
     letter == 'E' && return Semisimple.TypeE{rank}()
@@ -56,24 +51,6 @@ end
 
 # Number of vertices of a Dynkin diagram given in Sage's notation.
 _dynkin_rank(label::AbstractString) = parse(Int, label[2:end])
-
-# Vertex relabellings forced by the low-rank identifications of `parse_dynkin`. Only D3
-# needs one: its Bourbaki diagram is the path 2-1-3, so passing its vertices to A3, whose
-# diagram is 1-2-3, would name the wrong nodes.
-const DYNKIN_RELABELLING = Dict("D3" => Dict(1 => 2, 2 => 1, 3 => 3))
-
-"""
-    _dynkin_and_vertices(label, vertices)
-
-The Semisimple.jl type for `label` together with `vertices` renamed to that type's own
-Bourbaki numbering.
-"""
-function _dynkin_and_vertices(label::AbstractString, vertices)
-    relabelling = get(DYNKIN_RELABELLING, label, nothing)
-    renamed =
-        relabelling === nothing ? collect(vertices) : [relabelling[v] for v in vertices]
-    return parse_dynkin(label), renamed
-end
 
 """
     levi_type(dynkin_type, vertices)
@@ -206,13 +183,13 @@ true
 ```
 """
 function partial_flag_variety(dynkin::AbstractString, vertices)
-    dynkin_type, renamed = _dynkin_and_vertices(dynkin, vertices)
+    dynkin_type = parse_dynkin(dynkin)
     numerator = _weyl_poincare(Semisimple.degrees_fundamental_invariants(dynkin_type))
-    denominator = if isempty(renamed)
+    denominator = if isempty(vertices)
         one(Rq)
     else
         _weyl_poincare(
-            Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, renamed))
+            Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, vertices))
         )
     end
     poincare = divexact(numerator, denominator)
