@@ -435,7 +435,7 @@ function _del_bano(r::Int, d::Int, g::Int)
         (composition[i] + composition[i + 1]) * (fractional - floor(fractional))
     end
     isone(Base.denominator(twist)) ||
-      throw(ErrorException("non-integral Lefschetz twist $twist"))
+      error("non-integral Lefschetz twist $twist")
     shift = Int(Base.numerator(twist))
     shift > N && continue
     # everything upstream of the shift only needs this much precision
@@ -663,7 +663,7 @@ function moduli_parabolic_vector_bundles_rank_two(genus::Integer, weights)
       init=zero(HodgeDiamond),
     )
   arises_from_variety(result) ||
-    throw(ErrorException("the weights do not give a smooth projective variety"))
+    error("the weights do not give a smooth projective variety")
   return result
 end
 
@@ -809,15 +809,15 @@ function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
   builder = MPolyBuildCtx(R)
   for degree in 0:(2d), j in (i - 1):g
     coefficient = multiplicity(d - degree, j)
-    is_zero(coefficient) && continue
+    iszero(coefficient) && continue
     # the (g-j)th exterior power of the first cohomology of the curve is the
     # (g-j)th cohomology of the Jacobian
     dimensions = row(jacobian_g, g - j)
     twist = degree - (g - j)
     iseven(twist) && twist >= 0 ||
-      throw(ErrorException("unexpected parity in the Lefschetz twist"))
+      error("unexpected parity in the Lefschetz twist")
     for m in 0:(g - j)
-      is_zero(dimensions[m + 1]) && continue
+      iszero(dimensions[m + 1]) && continue
       push_term!(
         builder,
         ZZ(coefficient * dimensions[m + 1]),
@@ -1015,7 +1015,7 @@ function quiver_moduli(Q, d; mu=nothing)
   end
 
   result = solution[1] * (1 - v)
-  isone(denominator(result)) || throw(ErrorException("result needs to be a polynomial"))
+  isone(denominator(result)) || error("result needs to be a polynomial")
   poincare = numerator(result)
 
   # substitute v = xy

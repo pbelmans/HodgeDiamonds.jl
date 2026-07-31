@@ -100,7 +100,7 @@ coefficients dropped.
 function build_polynomial(terms)
   builder = MPolyBuildCtx(R)
   for (coefficient, exponents) in terms
-    is_zero(coefficient) || push_term!(builder, ZZ(coefficient), exponents)
+    iszero(coefficient) || push_term!(builder, ZZ(coefficient), exponents)
   end
   return finish(builder)
 end
@@ -108,7 +108,7 @@ end
 "The numerator of a rational that must be an integer, as del Baño's and Göttsche's sums are."
 function _integral(value)
   isone(Base.denominator(value)) ||
-    throw(ErrorException("expected an integral coefficient, got $value"))
+    error("expected an integral coefficient, got $value")
   return Base.numerator(value)
 end
 
@@ -156,7 +156,7 @@ series_one_minus_power(e::Int, N::Int) = series_one_minus_power(BigInt, e, N)
 "The series ``1/(1-L^e)=1+L^e+L^{2e}+\\ldots``, truncated at ``L^N``."
 function series_geometric(::Type{T}, e::Int, N::Int) where {T<:Number}
   e >= 1 || throw(ArgumentError("exponent needs to be positive"))
-  return [is_zero(m % e) ? one(T) : zero(T) for m in 0:N]
+  return [iszero(m % e) ? one(T) : zero(T) for m in 0:N]
 end
 series_geometric(e::Int, N::Int) = series_geometric(BigInt, e, N)
 
@@ -335,7 +335,7 @@ end
 # so all of them are cached on the way: a caller asking for many rows pays for the deepest.
 function _q_binomial_row(n::Int)
   return get!(Q_BINOMIAL_CACHE, n) do
-    is_zero(n) && return [one(Rq)]
+    iszero(n) && return [one(Rq)]
     previous = _q_binomial_row(n - 1)
     return [
       (j >= 1 ? previous[j] : zero(Rq)) + q^j * (j <= n - 1 ? previous[j + 1] : zero(Rq))
@@ -353,7 +353,7 @@ A composition is a choice of cut points in `1:(r - 1)`, so the powerset gives al
 ``2^{r-1}`` of them without the recursion recomputing its own sub-results.
 """
 compositions(r::Int) =
-  is_zero(r) ? [Int[]] : [diff([0; cuts; r]) for cuts in powerset(1:(r - 1))]
+  iszero(r) ? [Int[]] : [diff([0; cuts; r]) for cuts in powerset(1:(r - 1))]
 
 "Multiplicities of the parts of a partition, as a `part => multiplicity` dictionary."
 function multiplicities(partition)

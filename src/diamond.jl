@@ -91,7 +91,7 @@ AbstractAlgebra.polynomial(X::HodgeDiamond) = X.f
 # Largest exponent of x or of y occurring, so that the Hodge numbers fit in a square
 # matrix of size `_top_degree(X) + 1` with no trailing zero row or column.
 function _top_degree(X::HodgeDiamond)
-  is_zero(X.f) && return 0
+  iszero(X.f) && return 0
   largest = 0
   for exponents in exponent_vectors(X.f)
     largest = max(largest, exponents[1], exponents[2])
@@ -235,8 +235,8 @@ Base.zero(::Type{HodgeDiamond}) = HodgeDiamond(zero(R))
 Base.one(::Type{HodgeDiamond}) = HodgeDiamond(one(R))
 Base.zero(::HodgeDiamond) = zero(HodgeDiamond)
 Base.one(::HodgeDiamond) = one(HodgeDiamond)
-# AbstractAlgebra's `is_zero` is an alias of `Base.iszero`, so one method covers both
-Base.iszero(X::HodgeDiamond) = is_zero(X.f)
+# AbstractAlgebra's `iszero` is an alias of `Base.iszero`, so one method covers both
+Base.iszero(X::HodgeDiamond) = iszero(X.f)
 
 """
     X(i)
@@ -356,7 +356,7 @@ Whether the Hodge diamond could arise from a smooth projective variety: it satis
 Hodge symmetry and Serre symmetry, and carries no Lefschetz twist.
 """
 arises_from_variety(X::HodgeDiamond) =
-  is_hodge_symmetric(X) && is_serre_symmetric(X) && is_zero(lefschetz_power(X))
+  is_hodge_symmetric(X) && is_serre_symmetric(X) && iszero(lefschetz_power(X))
 
 """
     lefschetz_power(X)
@@ -365,7 +365,7 @@ The power of the Lefschetz class dividing the Hodge diamond, that is, the larges
 such that ``x^iy^i`` divides the Hodge--Poincaré polynomial.
 """
 function lefschetz_power(X::HodgeDiamond)
-  is_zero(X.f) && return 0
+  iszero(X.f) && return 0
   return minimum(min(exponents[1], exponents[2]) for exponents in exponent_vectors(X.f))
 end
 
@@ -392,7 +392,7 @@ julia> dimension(zero(HodgeDiamond))
 ```
 """
 function dimension(X::HodgeDiamond)
-  is_zero(X.f) && return -1
+  iszero(X.f) && return -1
   return _top_degree(X) - lefschetz_power(X)
 end
 
@@ -539,9 +539,9 @@ julia> row(moduli_vector_bundles(3, 1, 9), 3; truncate = true)
 function row(X::HodgeDiamond, i::Integer; truncate::Bool=false)
   entries = [X[p, i - p] for p in 0:i]
   truncate || return entries
-  leading = findfirst(!is_zero, entries)
+  leading = findfirst(!iszero, entries)
   leading === nothing && return empty(entries)
-  return entries[leading:findlast(!is_zero, entries)]
+  return entries[leading:findlast(!iszero, entries)]
 end
 
 """
@@ -822,7 +822,7 @@ function _grid(X::HodgeDiamond; hide_zeroes::Bool, quarter::Bool)
   table = fill("", 2d + 1, 2d + 1)
   for i in 0:(2d), j in max(0, i - d):min(i, d)
     entry = M[j + 1, i - j + 1]
-    hide_zeroes && is_zero(entry) && continue
+    hide_zeroes && iszero(entry) && continue
     table[i + 1, abs(d - i) + 2 * (j - max(0, i - d)) + 1] = string(entry)
   end
 

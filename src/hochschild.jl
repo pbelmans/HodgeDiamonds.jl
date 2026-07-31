@@ -46,7 +46,7 @@ end
 HochschildHomology(n::Integer) = HochschildHomology([n])
 
 function HochschildHomology(f::LaurentPolyRingElem)
-  is_zero(f) && return HochschildHomology([0])
+  iszero(f) && return HochschildHomology([0])
   lowest = AbstractAlgebra.Generic.trail_degree(f)
   highest = AbstractAlgebra.Generic.lead_degree(f)
   return HochschildHomology([BigInt(coeff(f, i)) for i in lowest:highest])
@@ -115,10 +115,10 @@ julia> dimension(HochschildHomology([1, 0, 22, 0, 1]))
 """
 function dimension(h::HochschildHomology)
   iszero(h) && return -1
-  return (length(h.L) ÷ 2) - (findfirst(!is_zero, h.L) - 1)
+  return (length(h.L) ÷ 2) - (findfirst(!iszero, h.L) - 1)
 end
 
-Base.iszero(h::HochschildHomology) = all(is_zero, h.L)
+Base.iszero(h::HochschildHomology) = all(iszero, h.L)
 
 """
     euler(h::HochschildHomology)
@@ -203,9 +203,9 @@ true
 """
 function symmetric_power(h::HochschildHomology, k::Integer)
   # `partitions(0)` is not usable, and the zeroth symmetric power is the unit anyway
-  is_zero(k) && return one(HochschildHomology)
+  iszero(k) && return one(HochschildHomology)
   n = dimension(h)
-  terms = [(i, h[i]) for i in (-n):n if !is_zero(h[i])]
+  terms = [(i, h[i]) for i in (-n):n if !iszero(h[i])]
   total = Dict{Int,BigInt}()
   for partition in partitions(Int(k))
     factor = Dict(0 => BigInt(1))
@@ -236,7 +236,7 @@ function _symmetric_summand(terms::Vector{Tuple{Int,BigInt}}, k::Int)
   if length(terms) == 1
     degree, thickness = terms[1]
     coefficient = falling_binomial(iseven(degree) ? thickness + k - 1 : thickness, k)
-    return is_zero(coefficient) ? Dict{Int,BigInt}() : Dict(k * degree => coefficient)
+    return iszero(coefficient) ? Dict{Int,BigInt}() : Dict(k * degree => coefficient)
   end
   total = Dict{Int,BigInt}()
   for j in 0:k
