@@ -139,10 +139,9 @@ end
 
 """
     X[p, q]
-    X[i]
 
-The Hodge number ``\\mathrm{h}^{p,q}``, or the `i`th row of the Hodge diamond. Indices
-outside the diamond give zero.
+The Hodge number ``\\mathrm{h}^{p,q}``. Indices outside the diamond give zero. For a whole
+row of the diamond, use [`row`](@ref).
 
 # Examples
 
@@ -150,19 +149,14 @@ outside the diamond give zero.
 julia> K3()[1, 1]
 20
 
-julia> K3()[2]
-3-element Vector{BigInt}:
-  1
- 20
-  1
+julia> K3()[7, 7]
+0
 ```
 """
 function Base.getindex(X::HodgeDiamond, p::Integer, q::Integer)
   (p < 0 || q < 0) && return BigInt(0)
   return BigInt(coeff(X.f, [Int(p), Int(q)]))
 end
-
-Base.getindex(X::HodgeDiamond, i::Integer) = [X[p, i - p] for p in 0:i]
 
 # ── arithmetic ──────────────────────────────────────────────────────────────────
 
@@ -516,11 +510,7 @@ julia> middle(K3())
   1
 ```
 """
-function middle(X::HodgeDiamond)
-  d = _top_degree(X)
-  M = Matrix(X)
-  return [M[i + 1, d - i + 1] for i in 0:d]
-end
+middle(X::HodgeDiamond) = row(X, _top_degree(X))
 
 """
     row(X, i; truncate = false)
@@ -529,16 +519,16 @@ The `i`th row of the Hodge diamond, that is, the Hodge numbers of the Hodge stru
 cohomology in degree `i`. With `truncate` set, leading and trailing zeroes are omitted,
 independently of each other, so that a row of zeroes truncates to nothing.
 
-Indexing with a single index, as in `X[i]`, gives the same list untruncated.
-
 # Examples
 
 ```jldoctest
 julia> middle(hypersurface(3, 4)) == row(hypersurface(3, 4), 4)
 true
 
-julia> row(hypersurface(3, 4), 4) == hypersurface(3, 4)[4]
-true
+julia> row(K3(), 1)
+2-element Vector{BigInt}:
+ 0
+ 0
 ```
 
 For the moduli space of vector bundles on a curve, cohomology in degree 3 is the same as
@@ -552,7 +542,7 @@ julia> row(moduli_vector_bundles(3, 1, 9), 3; truncate = true)
 ```
 """
 function row(X::HodgeDiamond, i::Integer; truncate::Bool=false)
-  entries = X[i]
+  entries = [X[p, i - p] for p in 0:i]
   truncate || return entries
   leading = findfirst(!is_zero, entries)
   leading === nothing && return empty(entries)
