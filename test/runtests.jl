@@ -59,6 +59,8 @@ const R, x, y = hodge_ring()
     @test Pn(10)(1, 1) == 11
     @test dimension(lefschetz()) == 0
     @test dimension(zero(HodgeDiamond)) == -1
+    # the dimension is symmetric in p and q, not read off the y-degree alone
+    @test dimension(from_polynomial(1 + x^2)) == 2 == dimension(from_polynomial(1 + y^2))
   end
 
   @testset "invariants" begin

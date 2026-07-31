@@ -384,7 +384,7 @@ end
     dimension(X::HodgeDiamond)
 
 Dimension of the Hodge diamond, taking twists by the Lefschetz class into account: we
-untwist by the maximal power and only then measure.
+untwist by the maximal power and only then measure. The empty space has dimension `-1`.
 
 # Examples
 
@@ -397,11 +397,14 @@ julia> dimension(lefschetz())
 
 julia> dimension(inoue())
 2
+
+julia> dimension(zero(HodgeDiamond))
+-1
 ```
 """
 function dimension(X::HodgeDiamond)
   is_zero(X.f) && return -1
-  return maximum(exponents[2] for exponents in exponent_vectors(X.f)) - lefschetz_power(X)
+  return _size(X) - lefschetz_power(X)
 end
 
 """
