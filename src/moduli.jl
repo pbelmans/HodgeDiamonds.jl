@@ -1117,14 +1117,6 @@ function brauer_severi(genus::Integer, degree::Integer, ramification)
          sum((_brauer_severi_fibre(datum) for datum in data); init=zero(HodgeDiamond))
 end
 
-"Partial sum ``s_{i,j}`` of the ramification datum, equation (2.15) in [Baumann]."
-function _brauer_severi_partial_sum(datum::Tuple, i::Int, j::Int)
-  e = length(datum)
-  (i in 1:e && j in 1:e) || throw(ArgumentError("indices out of range"))
-  shifted = (datum[i:end]..., datum[1:(i - 1)]...)
-  return sum(shifted[(e - j + 1):end])
-end
-
 """
 The ``k``th cut ``m(i,\\mathbf{n},k)``, equation (2.16) in [Baumann]: the tuple
 ``(n_{i-k},\\ldots,n_{i-1})`` with indices modulo ``e``.

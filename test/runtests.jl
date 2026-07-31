@@ -349,14 +349,8 @@ const R, x, y = hodge_ring()
     @test_throws ArgumentError brauer_severi(0, 3, [(1, 1)])
     @test_throws ArgumentError brauer_severi(0, 2, [(0, 2)])
 
-    # Example 2.3.3 of [Baumann]
+    # the reductions of Example 2.4.3 of [Baumann]
     datum = (3, 1, 4, 2)
-    expected = [2 6 7 10; 3 5 9 10; 1 4 6 10; 4 5 8 10]
-    @test all(
-      HD._brauer_severi_partial_sum(datum, i, j) == expected[i, j] for i in 1:4,
-      j in 1:4
-    )
-    # the reductions of Example 2.4.3
     @test HD._brauer_severi_cut(datum, 3, 1) == (1,)
     @test HD._brauer_severi_cut(datum, 3, 2) == (3, 1)
     @test HD._brauer_severi_cut(datum, 3, 3) == (2, 3, 1)
