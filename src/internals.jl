@@ -412,13 +412,10 @@ A factor contributes the identity in its ``t^0`` term, so it can be multiplied i
 a second copy of the accumulator: going down in `s` leaves every source coefficient
 ``t^{s-\\text{power}\\cdot k}`` untouched until it has been used.
 """
-hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int) =
-  with_fast_integers(T -> _hilbn_series(T, hodge_numbers, n))
-
-function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {T<:Number}
-  n == 0 && return [dense_monomial(0, 0, one(T), 0)]
-  accumulator = [zero_coefficients(T, 2s + 1) for s in 0:n]
-  accumulator[1][1, 1] = one(T)
+function hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int)
+  n == 0 && return [dense_monomial(0, 0, BigInt(1), 0)]
+  accumulator = [zero_coefficients(BigInt, 2s + 1) for s in 0:n]
+  accumulator[1][1, 1] = BigInt(1)
   for k in 1:n, p in 0:2, q in 0:2
     hodge_number = hodge_numbers[p + 1, q + 1]
     iszero(hodge_number) && continue
@@ -426,7 +423,7 @@ function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {
     exponent = epsilon * hodge_number
     maximum_power = fld(n, k)
     factor = [
-      T(falling_binomial(exponent, power) * BigInt(epsilon)^power) for
+      falling_binomial(exponent, power) * BigInt(epsilon)^power for
       power in 0:maximum_power
     ]
     for s in n:-1:0, power in 1:min(maximum_power, fld(s, k))
