@@ -5,14 +5,31 @@
 const Rt, t = laurent_polynomial_ring(ZZ, "t")
 
 """
-    HochschildHomology
+    HochschildHomology(L)
+    HochschildHomology(f)
+    HochschildHomology(n::Integer)
 
 Dimensions of the Hochschild homology of a smooth and proper dg category, so that Serre
 duality holds.
 
 Stored as a list of odd length representing ``\\mathrm{HH}_{-n}`` up to
-``\\mathrm{HH}_n``. Build one with [`from_list`](@ref), [`from_positive`](@ref) or
-[`from_polynomial`](@ref), or from a Hodge diamond with [`hochschild`](@ref).
+``\\mathrm{HH}_n``. Build one from such a list `L`, from a Hochschild--Poincaré Laurent
+polynomial `f`, from the positive half only with [`from_positive`](@ref), or from a Hodge
+diamond with [`hochschild`](@ref).
+
+# Examples
+
+```jldoctest
+julia> show(HochschildHomology([1, 0, 22, 0, 1]))
+Hochschild homology vector of dimension 2
+```
+
+```jldoctest
+julia> Rt, t = HodgeDiamonds.Rt, HodgeDiamonds.t;
+
+julia> HochschildHomology(t^-2 + 20 + t^2) == HochschildHomology([1, 0, 20, 0, 1])
+true
+```
 """
 struct HochschildHomology
   L::Vector{BigInt}
@@ -28,20 +45,12 @@ end
 
 HochschildHomology(n::Integer) = HochschildHomology([n])
 
-"""
-    from_list(L)
-
-Hochschild homology dimensions from a list representing ``\\mathrm{HH}_{-n}`` up to
-``\\mathrm{HH}_n``.
-
-# Examples
-
-```jldoctest
-julia> show(from_list([1, 0, 22, 0, 1]))
-Hochschild homology vector of dimension 2
-```
-"""
-from_list(L::AbstractVector{<:Integer}) = HochschildHomology(L)
+function HochschildHomology(f::LaurentPolyRingElem)
+  is_zero(f) && return HochschildHomology([0])
+  lowest = AbstractAlgebra.Generic.trail_degree(f)
+  highest = AbstractAlgebra.Generic.lead_degree(f)
+  return HochschildHomology([BigInt(coeff(f, i)) for i in lowest:highest])
+end
 
 """
     from_positive(L)
@@ -52,33 +61,12 @@ Hochschild homology dimensions from the list of ``\\mathrm{HH}_0`` up to
 # Examples
 
 ```jldoctest
-julia> from_positive([22, 0, 1]) == from_list([1, 0, 22, 0, 1])
+julia> from_positive([22, 0, 1]) == HochschildHomology([1, 0, 22, 0, 1])
 true
 ```
 """
 from_positive(L::AbstractVector{<:Integer}) =
   HochschildHomology(vcat(reverse(L)[1:(end - 1)], L))
-
-"""
-    from_polynomial(f::LaurentPolyRingElem)
-
-Hochschild homology dimensions from the Hochschild--Poincaré Laurent polynomial.
-
-# Examples
-
-```jldoctest
-julia> Rt, t = HodgeDiamonds.Rt, HodgeDiamonds.t;
-
-julia> from_polynomial(t^-2 + 20 + t^2) == from_list([1, 0, 20, 0, 1])
-true
-```
-"""
-function from_polynomial(f::LaurentPolyRingElem)
-  is_zero(f) && return HochschildHomology([0])
-  lowest = AbstractAlgebra.Generic.trail_degree(f)
-  highest = AbstractAlgebra.Generic.lead_degree(f)
-  return HochschildHomology([BigInt(coeff(f, i)) for i in lowest:highest])
-end
 
 # Build from `exponent => coefficient` pairs, padding to a symmetric range.
 function _from_terms(terms)
@@ -99,7 +87,7 @@ The Hochschild--Poincaré Laurent polynomial.
 # Examples
 
 ```jldoctest
-julia> polynomial(from_list([1, 0, 22, 0, 1]))
+julia> polynomial(HochschildHomology([1, 0, 22, 0, 1]))
 t^2 + 22 + t^-2
 ```
 """
@@ -132,7 +120,7 @@ The largest `i` with ``\\mathrm{HH}_i\\neq 0``.
 # Examples
 
 ```jldoctest
-julia> dimension(from_list([1, 0, 22, 0, 1]))
+julia> dimension(HochschildHomology([1, 0, 22, 0, 1]))
 2
 ```
 """
@@ -151,7 +139,7 @@ Euler characteristic of Hochschild homology.
 # Examples
 
 ```jldoctest
-julia> euler(from_list([1, 0, 22, 0, 1]))
+julia> euler(HochschildHomology([1, 0, 22, 0, 1]))
 24
 ```
 """
@@ -184,7 +172,7 @@ for operator in (:+, :-, :*)
 end
 
 # The stored vector can carry padding zeroes, so equality and hashing both go through the
-# trimmed one, which is the same for `from_list([0, 1, 0])` and `from_list([0, 0, 1, 0, 0])`.
+# trimmed one, which is the same for `[0, 1, 0]` and for `[0, 0, 1, 0, 0]`.
 _trimmed(h::HochschildHomology) = [h[i] for i in (-dimension(h)):dimension(h)]
 
 Base.:(==)(g::HochschildHomology, h::HochschildHomology) = _trimmed(g) == _trimmed(h)

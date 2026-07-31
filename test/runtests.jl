@@ -19,16 +19,16 @@ const R, x, y = hodge_ring()
   end
 
   @testset "construction" begin
-    @test from_matrix([1 0 1; 0 20 0; 1 0 1]) == K3()
-    @test from_matrix([[1, 0, 1], [0, 20, 0], [1, 0, 1]]) == K3()
-    @test from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
+    @test HodgeDiamond([1 0 1; 0 20 0; 1 0 1]) == K3()
+    @test HodgeDiamond([[1, 0, 1], [0, 20, 0], [1, 0, 1]]) == K3()
+    @test HodgeDiamond(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
     @test Matrix(K3()) == BigInt[1 0 1; 0 20 0; 1 0 1]
-    @test_throws ArgumentError from_matrix([1 2 3; 4 5 6])
-    @test_throws ArgumentError from_matrix([1 2; 0 1]; from_variety=true)
-    @test_throws ArgumentError from_polynomial(1 + x; from_variety=true)
+    @test_throws ArgumentError HodgeDiamond([1 2 3; 4 5 6])
+    @test_throws ArgumentError HodgeDiamond([1 2; 0 1]; from_variety=true)
+    @test_throws ArgumentError HodgeDiamond(1 + x; from_variety=true)
 
     # trailing zero rows and columns get dropped
-    @test Matrix(from_matrix([1 0 0; 0 0 0; 0 0 0])) == BigInt[1;;]
+    @test Matrix(HodgeDiamond([1 0 0; 0 0 0; 0 0 0])) == BigInt[1;;]
     @test Matrix(K3() * point()) == Matrix(K3())
   end
 
@@ -62,7 +62,7 @@ const R, x, y = hodge_ring()
     @test dimension(lefschetz()) == 0
     @test dimension(zero(HodgeDiamond)) == -1
     # the dimension is symmetric in p and q, not read off the y-degree alone
-    @test dimension(from_polynomial(1 + x^2)) == 2 == dimension(from_polynomial(1 + y^2))
+    @test dimension(HodgeDiamond(1 + x^2)) == 2 == dimension(HodgeDiamond(1 + y^2))
   end
 
   @testset "invariants" begin
@@ -84,7 +84,7 @@ const R, x, y = hodge_ring()
     @test row(hypersurface(3, 4), 4) == middle(hypersurface(3, 4))
     @test row(moduli_vector_bundles(3, 1, 9), 3; truncate=true) == BigInt[9, 9]
     # truncation strips both ends independently, whether or not the row is symmetric
-    @test row(from_polynomial(x^2 + x * y^2), 3; truncate=true) == BigInt[1]
+    @test row(HodgeDiamond(x^2 + x * y^2), 3; truncate=true) == BigInt[1]
     @test row(K3(), 3; truncate=true) == BigInt[]
 
     # motivic pieces may have negative entries and need not be Serre symmetric
@@ -121,9 +121,9 @@ const R, x, y = hodge_ring()
 
   @testset "Hochschild homology" begin
     h = hh(K3())
-    @test h == from_list([1, 0, 22, 0, 1])
+    @test h == HochschildHomology([1, 0, 22, 0, 1])
     @test from_positive([22, 0, 1]) == h
-    @test from_polynomial(HD.t^-2 + 22 + HD.t^2) == h
+    @test HochschildHomology(HD.t^-2 + 22 + HD.t^2) == h
     @test dimension(h) == 2
     @test euler(h) == 24
     @test h[0] == 22 && h[2] == 1 && h[5] == 0 && h[-2] == 1
@@ -134,15 +134,15 @@ const R, x, y = hodge_ring()
     @test dimension(1 + h) == 2
     @test dimension(3 * h) == 2
     @test h^0 == one(HochschildHomology)
-    @test from_list([0, 1, 0]) == from_list([0, 0, 1, 0, 0])
-    @test hash(h) == hash(from_list([1, 0, 22, 0, 1]))
-    @test length(Dict(h => 1, from_list([1, 0, 22, 0, 1]) => 2)) == 1
+    @test HochschildHomology([0, 1, 0]) == HochschildHomology([0, 0, 1, 0, 0])
+    @test hash(h) == hash(HochschildHomology([1, 0, 22, 0, 1]))
+    @test length(Dict(h => 1, HochschildHomology([1, 0, 22, 0, 1]) => 2)) == 1
     @test collect(sym(h, 2)) == BigInt[1, 0, 23, 0, 276, 0, 23, 0, 1]
     @test repr(MIME("text/plain"), h) ==
       "  -2   -1   0    1   2\n  1    0    22   0   1"
     @test repr(h) == "Hochschild homology vector of dimension 2"
-    @test_throws ArgumentError from_list([1, 2])
-    @test_throws ArgumentError from_list([1, 0, 2])
+    @test_throws ArgumentError HochschildHomology([1, 2])
+    @test_throws ArgumentError HochschildHomology([1, 0, 2])
   end
 
   @testset "curves, surfaces and abelian varieties" begin

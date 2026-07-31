@@ -7,36 +7,28 @@ const QUARTER = Ref(false)
 const Ry, _y = polynomial_ring(ZZ, :y)
 
 """
-    HodgeDiamond
+    HodgeDiamond(m; from_variety = false)
+    HodgeDiamond(f; from_variety = false)
+    HodgeDiamond(n::Integer)
 
 A Hodge diamond, stored as its Hodge--Poincaré polynomial in ``\\mathbb{Z}[x,y]``: the
 coefficient of ``x^py^q`` is ``\\mathrm{h}^{p,q}``.
 
-Build one with [`from_matrix`](@ref) or [`from_polynomial`](@ref), or with any of the
-built-in constructions such as [`K3`](@ref) or [`Pn`](@ref). An integer `n` is understood
-as `n` copies of the point, so that `2 * K3()` and `Pn(1) - 1` do what you would expect.
-"""
-struct HodgeDiamond
-  f::HPoly
-end
-
-HodgeDiamond(n::Integer) = HodgeDiamond(R(n))
-
-"""
-    from_matrix(m; from_variety = false)
-
-Construct a Hodge diamond from a square matrix, where `m[p + 1, q + 1]` is
-``\\mathrm{h}^{p,q}``.
+Build one from a square matrix `m` of Hodge numbers, with `m[p + 1, q + 1]` equal to
+``\\mathrm{h}^{p,q}`` (a vector of rows does just as well), from a Hodge--Poincaré
+polynomial `f` in the ring returned by [`hodge_ring`](@ref), or with any of the built-in
+constructions such as [`K3`](@ref) or [`Pn`](@ref). An integer `n` is understood as `n`
+copies of the point, so that `2 * K3()` and `Pn(1) - 1` do what you would expect.
 
 If `from_variety` is set, check that the result could come from a smooth projective
 variety.
 
 # Examples
 
-The Hodge diamond of a K3 surface:
+The Hodge diamond of a K3 surface, three ways:
 
 ```jldoctest
-from_matrix([1 0 1; 0 20 0; 1 0 1])
+HodgeDiamond([1 0 1; 0 20 0; 1 0 1])
 
 # output
 
@@ -48,44 +40,42 @@ from_matrix([1 0 1; 0 20 0; 1 0 1])
 ```
 
 ```jldoctest
-julia> from_matrix([1 0 1; 0 20 0; 1 0 1]) == K3()
+julia> HodgeDiamond([[1, 0, 1], [0, 20, 0], [1, 0, 1]]) == K3()
+true
+
+julia> R, x, y = hodge_ring();
+
+julia> HodgeDiamond(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
 true
 ```
 """
-function from_matrix(m::AbstractMatrix{<:Integer}; from_variety::Bool=false)
+struct HodgeDiamond
+  f::HPoly
+
+  function HodgeDiamond(f::HPoly; from_variety::Bool=false)
+    diamond = new(f)
+    from_variety &&
+      !arises_from_variety(diamond) &&
+      throw(
+        ArgumentError("the Hodge diamond does not arise from a smooth projective variety")
+      )
+    return diamond
+  end
+end
+
+HodgeDiamond(n::Integer) = HodgeDiamond(R(n))
+
+function HodgeDiamond(m::AbstractMatrix{<:Integer}; from_variety::Bool=false)
   size(m, 1) == size(m, 2) || throw(ArgumentError("matrix needs to be square"))
   builder = MPolyBuildCtx(R)
   for j in axes(m, 2), i in axes(m, 1)
     iszero(m[i, j]) || push_term!(builder, ZZ(m[i, j]), [i - 1, j - 1])
   end
-  return from_polynomial(finish(builder); from_variety=from_variety)
+  return HodgeDiamond(finish(builder); from_variety=from_variety)
 end
 
-function from_matrix(rows::AbstractVector{<:AbstractVector{<:Integer}}; kwargs...)
-  return from_matrix(permutedims(reduce(hcat, rows)); kwargs...)
-end
-
-"""
-    from_polynomial(f; from_variety = false)
-
-Construct a Hodge diamond from a Hodge--Poincaré polynomial in the ring returned by
-[`hodge_ring`](@ref).
-
-# Examples
-
-```jldoctest
-julia> R, x, y = hodge_ring();
-
-julia> from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
-true
-```
-"""
-function from_polynomial(f::HPoly; from_variety::Bool=false)
-  diamond = HodgeDiamond(f)
-  from_variety &&
-    !arises_from_variety(diamond) &&
-    throw(ArgumentError("the Hodge diamond does not arise from a smooth projective variety"))
-  return diamond
+function HodgeDiamond(rows::AbstractVector{<:AbstractVector{<:Integer}}; kwargs...)
+  return HodgeDiamond(permutedims(reduce(hcat, rows)); kwargs...)
 end
 
 """
@@ -704,7 +694,7 @@ julia> hochschild(K3())
 function hochschild(X::HodgeDiamond)
   d = _top_degree(X)
   M = Matrix(X)
-  return from_list([
+  return HochschildHomology([
     sum((M[d - i + j + 1, j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
     i in 0:(2d)
   ])
@@ -796,7 +786,7 @@ function mirror(X::HodgeDiamond)
   for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
     push_term!(builder, coefficient, [n - exponents[1], exponents[2]])
   end
-  return from_polynomial(finish(builder))
+  return HodgeDiamond(finish(builder))
 end
 
 # ── printing ────────────────────────────────────────────────────────────────────

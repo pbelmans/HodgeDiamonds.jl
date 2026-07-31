@@ -33,7 +33,7 @@ function hilbn(S::HodgeDiamond, n::Integer)
     a, b = geometric ? (min(p, 2n - q), min(q, 2n - p)) : (p, q)
     M[p + 1, q + 1] = top[a + 1, b + 1]
   end
-  return from_matrix(M; from_variety=geometric)
+  return HodgeDiamond(M; from_variety=geometric)
 end
 
 """
@@ -76,7 +76,7 @@ function nestedhilbn(S::HodgeDiamond, n::Integer)
   for p in 0:(2n), q in 0:(2n)
     M[p + 1, q + 1] = top[min(p, 2n - q) + 1, min(q, 2n - p) + 1]
   end
-  return from_matrix(M; from_variety=true)
+  return HodgeDiamond(M; from_variety=true)
 end
 
 """
@@ -105,7 +105,7 @@ function hilbtwo(X::HodgeDiamond)
   f = polynomial(X)
   doubled = _substitute_powers(f, 2, -1)
   twisted = sum((polynomial(X(i)) for i in 1:(d - 1)); init=zero(R))
-  return from_polynomial(divexact(f^2 + doubled, R(2)) + twisted; from_variety=true)
+  return HodgeDiamond(divexact(f^2 + doubled, R(2)) + twisted; from_variety=true)
 end
 
 """
@@ -136,7 +136,7 @@ function hilbthree(X::HodgeDiamond)
     2 * _substitute_powers(f, 3, 1) +
     6 * sum((polynomial(squared(i)) for i in 1:(d - 1)); init=zero(R)) +
     6 * sum((polynomial(X(i + j)) for i in 1:(d - 1) for j in i:(d - 1)); init=zero(R))
-  return from_polynomial(divexact(sixfold, R(6)); from_variety=true)
+  return HodgeDiamond(divexact(sixfold, R(6)); from_variety=true)
 end
 
 # f(sign * x^power, sign * y^power)
@@ -201,7 +201,7 @@ function generalised_kummer(n::Integer)
   n >= 1 || throw(ArgumentError("n needs to be at least 1"))
   N = max(0, 2n - 2)
   # Göttsche--Soergel gives the polynomial for A × Kum^n A, so we divide out A
-  return from_polynomial(
+  return HodgeDiamond(
     _to_integral_polynomial(
       multiply_truncated(
         _kummer_product(n, N), inverse_truncated(_kummer_product(1, N), N), N
@@ -289,7 +289,7 @@ julia> betti(ogrady6())[3]
 8
 ```
 """
-ogrady6() = from_matrix(
+ogrady6() = HodgeDiamond(
   [
     1 0 1 0 1 0 1
     0 6 0 12 0 6 0
@@ -318,7 +318,7 @@ julia> betti(ogrady10())[3]
 24
 ```
 """
-ogrady10() = from_matrix(
+ogrady10() = HodgeDiamond(
   [
     1 0 1 0 1 0 1 0 1 0 1
     0 22 0 22 0 23 0 22 0 22 0
@@ -368,7 +368,7 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
   g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
   gcd(r, d) == 1 || throw(ArgumentError("rank and degree need to be coprime"))
   total = with_fast_integers(T -> _del_bano(T, r, d, g))
-  return from_polynomial(dense_to_polynomial(total); from_variety=true)
+  return HodgeDiamond(dense_to_polynomial(total); from_variety=true)
 end
 
 function _del_bano(::Type{T}, r::Int, d::Int, g::Int) where {T<:Number}
@@ -591,7 +591,7 @@ function seshadris_desingularisation(genus::Integer)
     N,
   )
 
-  return from_polynomial(
+  return HodgeDiamond(
     _to_integral_polynomial(part_one - part_two + part_three + part_four + part_five)
   )
 end
@@ -829,7 +829,7 @@ function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
       )
     end
   end
-  return from_polynomial(finish(builder); from_variety=true)
+  return HodgeDiamond(finish(builder); from_variety=true)
 end
 
 """
@@ -879,7 +879,7 @@ function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
     )
     is_zero(coefficient) || push_term!(builder, ZZ(coefficient), [degree, degree])
   end
-  return from_polynomial(finish(builder); from_variety=true)
+  return HodgeDiamond(finish(builder); from_variety=true)
 end
 
 # ── quiver moduli ────────────────────────────────────────────────────────────────
@@ -1032,7 +1032,7 @@ function quiver_moduli(Q, d; mu=nothing)
       throw(ErrorException("expected an integral coefficient"))
     push_term!(builder, ZZ(Base.numerator(coefficient)), [i, i])
   end
-  return from_polynomial(finish(builder))
+  return HodgeDiamond(finish(builder))
 end
 
 function _is_acyclic(adjacency::Matrix{Int})

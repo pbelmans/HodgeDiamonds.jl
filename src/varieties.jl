@@ -72,7 +72,7 @@ true
 """
 function Pn(n::Integer)
   n >= 0 || throw(ArgumentError("dimension needs to be non-negative"))
-  return from_polynomial(sum((x * y)^i for i in 0:n))
+  return HodgeDiamond(sum((x * y)^i for i in 0:n))
 end
 
 """
@@ -100,7 +100,7 @@ julia> curve(2)
 """
 function curve(genus::Integer)
   genus >= 0 || throw(ArgumentError("genus needs to be non-negative"))
-  return from_polynomial(1 + genus * x + genus * y + x * y)
+  return HodgeDiamond(1 + genus * x + genus * y + x * y)
 end
 
 """
@@ -124,7 +124,7 @@ true
 function surface(genus::Integer, irregularity::Integer, h11::Integer)
   (genus >= 0 && irregularity >= 0 && h11 >= 0) ||
     throw(ArgumentError("invariants need to be non-negative"))
-  return from_matrix(
+  return HodgeDiamond(
     [1 irregularity genus; irregularity h11 irregularity; genus irregularity 1]
   )
 end
@@ -179,7 +179,7 @@ function symmetric_power(n::Integer, genus::Integer)
       )
     end
   end
-  return from_matrix([hodge(i, j) for i in 0:n, j in 0:n])
+  return HodgeDiamond([hodge(i, j) for i in 0:n, j in 0:n])
 end
 
 """
@@ -258,7 +258,7 @@ function kummer_resolution(dimension::Integer)
   )
     iseven(exponents[1] + exponents[2]) && push_term!(builder, coefficient, exponents)
   end
-  invariant = from_polynomial(finish(builder))
+  invariant = HodgeDiamond(finish(builder))
   return invariant +
          sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond))
 end
@@ -375,7 +375,7 @@ function complete_intersection(degrees, dimension::Integer)
   for i in 0:N
     M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
   end
-  return from_matrix(M; from_variety=true)
+  return HodgeDiamond(M; from_variety=true)
 end
 
 """
@@ -478,9 +478,9 @@ enriques("supersingular")
 enriques() = surface(0, 0, 10)
 
 function enriques(kind::AbstractString)
-  kind == "classical" && return from_matrix([1 0 0; 1 12 1; 0 0 1])
-  kind == "singular" && return from_matrix([1 1 1; 0 10 0; 1 1 1])
-  kind == "supersingular" && return from_matrix([1 1 1; 1 12 1; 1 1 1])
+  kind == "classical" && return HodgeDiamond([1 0 0; 1 12 1; 0 0 1])
+  kind == "singular" && return HodgeDiamond([1 1 1; 0 10 0; 1 1 1])
+  kind == "supersingular" && return HodgeDiamond([1 1 1; 1 12 1; 1 1 1])
   throw(ArgumentError("invalid choice for characteristic 2: $kind"))
 end
 
@@ -519,7 +519,7 @@ ruled(genus::Integer) = surface(0, genus, 2)
 
 Hodge diamond of an Inoue surface, a non-Kähler surface for which Hodge symmetry fails.
 """
-inoue() = from_matrix([1 1 0; 0 0 0; 0 1 1])
+inoue() = HodgeDiamond([1 1 0; 0 0 0; 0 1 1])
 
 """
     hopf()
@@ -536,7 +536,7 @@ Hodge diamond of a primary Kodaira surface.
 These are non-Kähler surfaces with ``\\mathrm{b}_1=3``, so Hodge symmetry fails:
 ``\\mathrm{h}^{1,0}=1`` and ``\\mathrm{h}^{0,1}=2``.
 """
-kodaira_primary() = from_matrix([1 2 1; 1 2 1; 1 2 1])
+kodaira_primary() = HodgeDiamond([1 2 1; 1 2 1; 1 2 1])
 
 """
     kodaira_secondary()
@@ -546,7 +546,7 @@ Hodge diamond of a secondary Kodaira surface.
 These are non-Kähler surfaces with ``\\mathrm{b}_1=1`` and ``\\mathrm{b}_2=0``, so they
 have the same Hodge diamond as the Hopf and Inoue surfaces.
 """
-kodaira_secondary() = from_matrix([1 1 0; 0 0 0; 0 1 1])
+kodaira_secondary() = HodgeDiamond([1 1 0; 0 0 0; 0 1 1])
 
 # ── weighted hypersurfaces and cyclic covers ─────────────────────────────────────
 
@@ -631,7 +631,7 @@ function weighted_hypersurface(degree::Integer, weights)
   for i in 0:(n - 1)
     M[i + 1, n - i] = hodge(i, n - i - 1)
   end
-  return from_matrix(M; from_variety=true)
+  return HodgeDiamond(M; from_variety=true)
 end
 
 """
@@ -822,7 +822,7 @@ function fano_threefold(rank::Integer, identifier::Integer)
   haskey(FANO_THREEFOLD_H12, key) ||
     throw(ArgumentError("no Fano threefold with rank $rank and number $identifier"))
   h12 = FANO_THREEFOLD_H12[key]
-  return from_matrix([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)
+  return HodgeDiamond([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)
 end
 
 # ── other ───────────────────────────────────────────────────────────────────────
@@ -870,7 +870,7 @@ true
 """
 function Mzeronbar(n::Integer)
   n >= 2 || throw(ArgumentError("n needs to be at least 2"))
-  return from_polynomial(_manin(Int(n)))
+  return HodgeDiamond(_manin(Int(n)))
 end
 
 # ── mathematical notation ────────────────────────────────────────────────────────

@@ -91,7 +91,7 @@ function partial_flag_variety(dynkin::AbstractString, vertices)
   for i in 0:degree(poincare)
     M[i + 1, i + 1] = BigInt(coeff(poincare, i))
   end
-  return from_matrix(M; from_variety=true)
+  return HodgeDiamond(M; from_variety=true)
 end
 
 """

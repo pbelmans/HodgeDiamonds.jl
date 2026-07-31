@@ -6,9 +6,7 @@ DocTestSetup = :(using AbstractAlgebra, HodgeDiamonds)
 
 ```@docs
 HochschildHomology
-from_list
 from_positive
-from_polynomial(::AbstractAlgebra.LaurentPolyRingElem)
 polynomial(::HochschildHomology)
 dimension(::HochschildHomology)
 euler(::HochschildHomology)

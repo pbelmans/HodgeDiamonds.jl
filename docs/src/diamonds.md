@@ -8,8 +8,6 @@ DocTestSetup = :(using AbstractAlgebra, HodgeDiamonds)
 
 ```@docs
 HodgeDiamond
-from_matrix
-from_polynomial
 hodge_ring
 polynomial
 Base.Matrix

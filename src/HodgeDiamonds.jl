@@ -34,7 +34,7 @@ The generators are deliberately not exported, as `x` and `y` are names that clas
 ```jldoctest
 julia> R, x, y = hodge_ring();
 
-julia> from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
+julia> HodgeDiamond(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
 true
 ```
 """
@@ -50,7 +50,7 @@ include("moduli.jl")
 # ── exports from diamond.jl ─────────────────────────────────────────────────────
 
 export HodgeDiamond, HochschildHomology
-export from_list, from_matrix, from_polynomial, from_positive
+export from_positive
 export hodge_ring, polynomial, pprint
 export arises_from_variety,
   betti,

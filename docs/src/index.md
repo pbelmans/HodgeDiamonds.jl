@@ -73,7 +73,7 @@ mirror(hypersurface(5, 3))
 ## Getting started
 
 ```jldoctest
-julia> X = from_matrix([1 2; 2 1])
+julia> X = HodgeDiamond([1 2; 2 1])
       1
   2       2
       1
@@ -117,7 +117,7 @@ There are many varieties built in, so the K3 surface defined above can be compar
 built-in one:
 
 ```jldoctest
-julia> from_matrix([1 0 1; 0 20 0; 1 0 1]) == K3()
+julia> HodgeDiamond([1 0 1; 0 20 0; 1 0 1]) == K3()
 true
 ```
 
@@ -148,8 +148,9 @@ differs where Julia has a better way of saying something:
 
   - The empty space is `zero(HodgeDiamond)` and the point is `one(HodgeDiamond)`, next to
     [`point`](@ref).
-  - `Matrix(X)` gives the matrix of Hodge numbers, and [`from_matrix`](@ref) builds one
-    from a matrix.
+  - `Matrix(X)` gives the matrix of Hodge numbers, and the constructor
+    [`HodgeDiamond`](@ref) goes back, from a matrix or from a polynomial, rather than
+    through Sage's `from_matrix` and `from_polynomial`.
   - Displaying a diamond in the REPL prints the diamond; `show(io, X)` prints a one-line
     summary. Sage has these the other way around.
   - LaTeX output goes through `show(io, MIME("text/latex"), X)`.
