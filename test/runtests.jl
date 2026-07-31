@@ -368,21 +368,12 @@ const R, x, y = hodge_ring()
       (kronecker(5), [2, 3], nothing),
       (wall, [1, 1, 1], nothing),
     ]
-      n = length(d)
-      form = [(i == j ? 1 : 0) - Q[i, j] for i in 1:n, j in 1:n]
-      stability = if mu === nothing
-        slope([
-          sum(d[i] * form[i, j] for i in 1:n) - sum(form[j, i] * d[i] for i in 1:n) for
-          j in 1:n
-        ])
-      else
-        mu
-      end
-      lattice = HodgeDiamonds._same_slope(d, stability)
+      form = HD._euler_form(Matrix{Int}(Q))
+      stability = something(mu, HD._canonical_stability(form, d))
+      lattice = HD._same_slope(d, stability)
       @test length(lattice) == 2
-      @test HodgeDiamonds._intersection_quiver_moduli(
-        Matrix{Int}(Q), form, d, stability, lattice
-      ) == polynomial(quiver_moduli(Q, d; mu=mu))
+      @test HD._intersection_quiver_moduli(Matrix{Int}(Q), form, d, stability, lattice) ==
+        polynomial(quiver_moduli(Q, d; mu=mu))
     end
 
     # reflection functors identify M(a,b) with M(b, m*b-a) for the m-Kronecker quiver, on
@@ -431,7 +422,7 @@ const R, x, y = hodge_ring()
         rotations = [circshift(a, k) for k in 0:(d - 1)]
         union!(seen, rotations)
         # primitive, or twice a primitive sequence of length d/2
-        period = minimum(k for k in 1:d if circshift(a, k) == a)
+        period = findfirst(k -> circshift(a, k) == a, 1:d)
         period == d || (iseven(m) && d % 4 == 2 && period == d ÷ 2) || continue
         push!(classes, minimum(sum((d - i) * r[i] for i in 1:d) for r in rotations))
       end

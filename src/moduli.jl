@@ -510,38 +510,35 @@ end
 
 # ── intersection cohomology of the moduli space ──────────────────────────────────
 #
-# For non-coprime rank and degree the moduli space is singular and del Baño's formula no
-# longer computes anything about it. Mozgovoy--Reineke express its intersection cohomology
-# through the Donaldson--Thomas invariants of the curve. Write ``e=\gcd(r,d)``,
-# ``r_0=r/e``, ``d_0=d/e``, let ``\mathfrak{M}(r,d)`` be the stack of semistable bundles,
-# and put
+# For non-coprime rank and degree the moduli space is singular and del Baño's formula says
+# nothing about it. Mozgovoy--Reineke express its intersection cohomology through the
+# Donaldson--Thomas invariants of the curve. Write ``e=\gcd(r,d)``, ``r_0=r/e``,
+# ``d_0=d/e``, let ``\mathfrak{M}(r,d)`` be the stack of semistable bundles, and put
 #
 #     Q = 1 + \sum_{m\ge1} L^{(1-g)(mr_0)^2/2} E(\mathfrak{M}(mr_0,md_0)) s^m,  s = t^{r_0}.
 #
-# Then Theorem 1.1 together with (5.2) of [MR5069270] says
+# Theorem 1.1 together with (5.2) of [MR5069270] then says, with Log the plethystic
+# logarithm and ``\dim M(r,d) = (g-1)r^2+1`` for non-fixed determinant,
 #
-#     E(IH^*(M(r,d))) = L^{\dim/2} (L^{1/2}-L^{-1/2}) [\Log Q]_{s^e},
-#
-# with Log the plethystic logarithm and dim = (g-1)r^2+1. Note that this is the moduli
-# space with non-fixed determinant.
+#     E(IH^*(M(r,d))) = L^{\dim/2} (L^{1/2}-L^{-1/2}) [\Log Q]_{s^e}.
 #
 # Two rewritings keep the computation inside the integral dense machinery of internals.jl.
 #
-# First, E(\mathfrak{M}(r,d)) = E(Jac) / (L-1) times del Baño's composition sum. Zagier's
-# formula for the stack (Theorem 5.4 of [MR5069270]) is term by term del Baño's,
-# off by exactly one factor of the Jacobian and one of L-1, and neither derivation uses
-# coprimality; del Baño's fractional parts are those of -r_{\le i}d/r rather than
-# r_{\le i}d/r, which is the harmless replacement of d by -d.
+# First, ``E(\mathfrak{M}(r,d)) = E(Jac)/(L-1)`` times del Baño's composition sum: Zagier's
+# formula for the stack (Theorem 5.4 of [MR5069270]) is term by term del Baño's, off by
+# exactly one factor of the Jacobian and one of ``L-1``, and neither derivation uses
+# coprimality. Del Baño's fractional parts are those of ``-r_{\le i}d/r`` rather than
+# ``r_{\le i}d/r``, which is the harmless replacement of ``d`` by ``-d``.
 #
-# Second, the half powers of L are an artefact of the variable s. Substituting
+# Second, the half powers of ``L`` are an artefact of the variable ``s``. Substituting
 # ``s = L^{(g-1)r_0^2/2}\tilde s`` makes the coefficient of ``\tilde s^m`` equal to
-# ``L^{-K_m} E(\mathfrak{M}(mr_0,md_0))`` with ``K_m = (g-1)r_0^2m(m-1)/2`` an integer, and
-# collapses every prefactor above:
+# ``L^{-K_m}E(\mathfrak{M}(mr_0,md_0))``, with ``K_m = (g-1)r_0^2m(m-1)/2`` an integer, and
+# collapses every prefactor above to
 #
 #     E(IH^*(M(r,d))) = (L-1) G,    where [\Log Q]_{\tilde s^e} = L^{-K_e} G.
 #
-# For coprime rank and degree G is E(\mathfrak{M}(r,d)) and this is E(M(r,d)) again, which
-# is what `_del_bano` computes; the tests check that.
+# For coprime rank and degree ``G`` is ``E(\mathfrak{M}(r,d))`` and this is ``E(M(r,d))``
+# again, which is what `_del_bano` computes; the tests check that.
 #
 # The one place where the odd degree of ``L^{1/2}`` survives is the Adams operation on the
 # rescaled variable: ``\psi^n(L^{1/2}) = (-1)^{n+1}L^{n/2}``, hence
@@ -550,17 +547,14 @@ end
 "Möbius function of a positive integer, by trial division."
 function _mobius(n::Int)
   n >= 1 || throw(ArgumentError("argument needs to be positive"))
-  sign, remaining, divisor = 1, n, 2
-  while divisor * divisor <= remaining
-    if is_zero(remaining % divisor)
-      remaining ÷= divisor
-      is_zero(remaining % divisor) && return 0
-      sign = -sign
-    end
-    divisor += 1
+  sign, remaining = 1, n
+  for divisor in 2:isqrt(n)
+    is_zero(remaining % divisor) || continue
+    remaining ÷= divisor
+    is_zero(remaining % divisor) && return 0
+    sign = -sign
   end
-  isone(remaining) || (sign = -sign)
-  return sign
+  return isone(remaining) ? sign : -sign
 end
 
 # Adams operation ``\psi^n`` on a dense series. On E-polynomials it is the substitution
@@ -568,19 +562,16 @@ end
 # exponents and, for even `n`, signs the odd-degree terms.
 function _adams(dense::Matrix{T}, n::Int, N::Int) where {T<:Number}
   image = zero_coefficients(T, N + 1)
-  for (value, exponents) in dense_terms(dense)
-    iszero(value) && continue
-    i, j = n * exponents[1], n * exponents[2]
-    (i <= N && j <= N) || continue
-    negate = iseven(n) && isodd(exponents[1] + exponents[2])
-    image[i + 1, j + 1] += negate ? -value : value
+  for (value, (i, j)) in dense_terms(dense)
+    (iszero(value) || n * i > N || n * j > N) && continue
+    image[n * i + 1, n * j + 1] += iseven(n) && isodd(i + j) ? -value : value
   end
   return image
 end
 
 "Multiply a dense series by ``L^k = (xy)^k``, truncated at bidegree `N`."
 function _lefschetz_shift(dense::Matrix{T}, k::Int, N::Int) where {T<:Number}
-  k >= 0 || throw(ArgumentError("shift needs to be non-negative"))
+  @assert k >= 0 "shift must be non-negative"
   iszero(k) && return dense
   shifted = zero_coefficients(T, N + 1)
   kept = 1:(N + 1 - k)
@@ -607,7 +598,6 @@ function _intersection_moduli_vector_bundles(r::Int, d::Int, g::Int)
   N = (g - 1) * r^2 + 1                       # dimension of M(r,d), non-fixed determinant
   c = (g - 1) * r0^2
   K(m) = c * m * (m - 1) ÷ 2
-  epsilon(n) = (isodd(n) || iseven(c)) ? 1 : -1
 
   # the coefficients of Q - 1 in the normalisation above, that is E(𝔐(m r0, m d0))
   jacobian_class = polynomial_to_dense(T, polynomial(jacobian(g)), N)
@@ -636,8 +626,10 @@ function _intersection_moduli_vector_bundles(r::Int, d::Int, g::Int)
     mobius = _mobius(n)
     iszero(mobius) && continue
     m = e ÷ n
+    # ψ^n(s̃) = (-1)^{(n+1)c} s̃^n, so an even `n` flips the sign of an odd `c` and `m`
+    sign = isodd(c) && iseven(n) && isodd(m) ? -1 : 1
     image = _lefschetz_shift(_adams(logarithm[m], n, N), K(e) - n * K(m), N)
-    total .+= T(mobius * epsilon(n)^m, n) .* image
+    total .+= T(sign * mobius, n) .* image
   end
 
   # E(IH^*(M(r,d))) = (L-1) G, then divide out the Jacobian for the fixed determinant
@@ -647,9 +639,10 @@ function _intersection_moduli_vector_bundles(r::Int, d::Int, g::Int)
 
   # the quotient must be a polynomial of the bidegree of the fixed determinant moduli
   # space, which is a real check on both the division and everything upstream of it
-  beyond = ((r ^ 2 - 1) * (g - 1) + 2):(N + 1)
+  dimension = (r^2 - 1) * (g - 1)
+  beyond = (dimension + 2):(N + 1)
   all(iszero, @view fixed[beyond, :]) && all(iszero, @view fixed[:, beyond]) ||
-    error("intersection cohomology beyond the expected bidegree")
+    error("intersection cohomology beyond bidegree ($dimension, $dimension)")
   return _to_integral_polynomial(fixed)
 end
 
@@ -1185,21 +1178,12 @@ x^13*y^13 + x^11*y^11
 """
 function quiver_moduli(Q, d; mu=nothing)
   adjacency = Matrix{Int}(Q)
-  n = length(d)
-  size(adjacency) == (n, n) ||
+  size(adjacency) == (length(d), length(d)) ||
     throw(ArgumentError("adjacency matrix and dimension vector do not match"))
 
-  # Euler form of the quiver
-  euler_form = [(i == j ? 1 : 0) - adjacency[i, j] for i in 1:n, j in 1:n]
+  euler_form = _euler_form(adjacency)
   target = [Int(di) for di in d]
-  stability = if mu === nothing
-    slope([
-      sum(target[i] * euler_form[i, j] for i in 1:n) -
-      sum(euler_form[j, i] * target[i] for i in 1:n) for j in 1:n
-    ])
-  else
-    mu
-  end
+  stability = mu === nothing ? _canonical_stability(euler_form, target) : mu
 
   # a semistable representation is strictly semistable exactly when it has a proper
   # subrepresentation of the same slope, so the moduli space is smooth exactly when no
@@ -1218,6 +1202,16 @@ function quiver_moduli(Q, d; mu=nothing)
     from_variety=_is_acyclic(adjacency),
   )
 end
+
+"The Euler form of the quiver as a matrix, ``\\delta_{ij}`` minus the number of arrows."
+_euler_form(adjacency::Matrix{Int}) =
+  [(i == j) - adjacency[i, j] for i in axes(adjacency, 1), j in axes(adjacency, 2)]
+
+"The canonical stability condition, the antisymmetrised Euler form paired with `target`."
+_canonical_stability(euler_form::Matrix{Int}, target::Vector{Int}) = slope([
+  sum((euler_form[i, j] - euler_form[j, i]) * target[i] for i in eachindex(target)) for
+  j in eachindex(target)
+])
 
 """
 The dimension vectors strictly between `0` and `target` satisfying `keep`, with the zero
@@ -1244,13 +1238,16 @@ function _lefschetz_numerator(value::FracElem)
   return numerator(value)
 end
 
+"The Euler form of the quiver, ``(e,f) = \\sum_i e_if_i - \\sum_{\\alpha:i\\to j} e_if_j``."
+_euler_pairing(euler_form::Matrix{Int}, e, f) =
+  sum(e[a] * euler_form[a, b] * f[b] for a in eachindex(e), b in eachindex(f))
+
 # Class of the stack of semistable representations of dimension vector `target`, that is
 # ``[R^{ss}_d]/[G_d]``, by the Harder--Narasimhan recursion of Corollary 5.5 of [MR1974891]
 # resolved through a transfer matrix. Nothing here needs `target` to be coprime.
 function _semistable_stack(
   adjacency::Matrix{Int}, euler_form::Matrix{Int}, target::Vector{Int}, stability
 )
-  n = length(target)
   iszero(target) && return one(Kv)
 
   # indexing set of Corollary 5.5: dimension vectors below the target with bigger slope,
@@ -1264,12 +1261,10 @@ function _semistable_stack(
   for i in 1:size_transfer, j in i:size_transfer
     difference = indexing[j] - indexing[i]
     all(>=(0), difference) || continue
-    power =
-      -sum(difference[a] * euler_form[a, b] * indexing[i][b] for a in 1:n, b in 1:n)
-    cardinality =
-      v^sum(difference[a] * difference[b] * adjacency[a, b] for a in 1:n, b in 1:n)
+    power = -_euler_pairing(euler_form, difference, indexing[i])
+    representations = v^_euler_pairing(adjacency, difference, difference)
     group = prod((_general_linear(part) for part in difference); init=one(Kv))
-    transfer[i, j] = v^power * cardinality//group
+    transfer[i, j] = v^power * representations//group
   end
 
   # back substitution is faster than inverting
@@ -1323,9 +1318,6 @@ const QuiverSeries = Dict{Vector{Int},elem_type(Kw)}
 _substitute(value::FracElem, image) =
   evaluate(numerator(value), image)//evaluate(denominator(value), image)
 
-"Move a rational function in the Lefschetz class to one in its square root."
-_to_square_root(value::FracElem) = _substitute(value, w^2)
-
 "Adams operation ``\\psi^n``, the substitution ``w \\mapsto w^n``."
 _adams(value::FracElem, n::Int) = _substitute(value, w^n)
 
@@ -1347,8 +1339,8 @@ function _intersection_quiver_moduli(
   stability,
   lattice::Vector{Vector{Int}},
 )
-  pairing(e, f) =
-    sum(e[a] * euler_form[a, b] * f[b] for a in eachindex(e), b in eachindex(f))
+  pairing(e, f) = _euler_pairing(euler_form, e, f)
+  height = sum(target)
 
   # Meinhardt--Reineke need the stability condition to be generic for this slope, meaning
   # that the antisymmetrised Euler form vanishes on the dimension vectors of that slope
@@ -1359,11 +1351,12 @@ function _intersection_quiver_moduli(
     ),
   )
 
-  # the generating series, without its constant term
+  # the generating series, without its constant term; the stack class comes in the
+  # Lefschetz class itself, so substitute L = w^2
   series = QuiverSeries(
     e =>
       (-w)^pairing(e, e) *
-      _to_square_root(_semistable_stack(adjacency, euler_form, e, stability)) for
+      _substitute(_semistable_stack(adjacency, euler_form, e, stability), w^2) for
     e in lattice if !iszero(e)
   )
 
@@ -1371,13 +1364,13 @@ function _intersection_quiver_moduli(
   # sums of k non-zero dimension vectors, so the sum stops at |target|
   logarithm = QuiverSeries()
   power = series
-  for k in 1:sum(target)
+  for k in 1:height
     isempty(power) && break
     scale = Kw((-1)^(k - 1))//k
     for (e, value) in power
       logarithm[e] = get(logarithm, e, zero(Kw)) + scale * value
     end
-    k == sum(target) || (power = _bounded_convolve(power, series, target))
+    k == height || (power = _bounded_convolve(power, series, target))
   end
 
   # and the plethystic one, Log(1 + x) = Σ_n μ(n)/n ψ^n(log(1 + x)); only those n with
