@@ -357,7 +357,59 @@ const R, x, y = hodge_ring()
 
     @test_throws ArgumentError quiver_moduli([0 1; 1 0], (1, 1))
     @test_throws ArgumentError quiver_moduli([1 1; 0 0], (1, 1))
-    @test_throws ArgumentError quiver_moduli(kronecker(2), (2, 2))
+
+    # in the presence of strictly semistable representations the answer is intersection
+    # cohomology, via Meinhardt--Reineke; the two formulas have to agree wherever both
+    # apply, so route a few smooth cases through the singular branch on purpose
+    for (Q, d, mu) in [
+      (kronecker(2), [1, 1], slope((1, -1))),
+      (kronecker(5), [1, 1], nothing),
+      (kronecker(4), [1, 2], slope((2, 1))),
+      (kronecker(5), [2, 3], nothing),
+      (wall, [1, 1, 1], nothing),
+    ]
+      n = length(d)
+      form = [(i == j ? 1 : 0) - Q[i, j] for i in 1:n, j in 1:n]
+      stability = if mu === nothing
+        slope([
+          sum(d[i] * form[i, j] for i in 1:n) - sum(form[j, i] * d[i] for i in 1:n) for
+          j in 1:n
+        ])
+      else
+        mu
+      end
+      lattice = HodgeDiamonds._same_slope(d, stability)
+      @test length(lattice) == 2
+      @test HodgeDiamonds._intersection_quiver_moduli(
+        Matrix{Int}(Q), form, d, stability, lattice
+      ) == polynomial(quiver_moduli(Q, d; mu=mu))
+    end
+
+    # reflection functors identify M(a,b) with M(b, m*b-a) for the m-Kronecker quiver, on
+    # dimension vectors whose moduli space is singular
+    @test quiver_moduli(kronecker(3), (2, 2)) == quiver_moduli(kronecker(3), (2, 4))
+    @test quiver_moduli(kronecker(3), (3, 3)) == quiver_moduli(kronecker(3), (3, 6))
+    @test quiver_moduli(kronecker(3), (2, 3)) == quiver_moduli(kronecker(3), (3, 7))
+    @test quiver_moduli(kronecker(4), (3, 3)) == quiver_moduli(kronecker(4), (3, 9))
+    @test quiver_moduli(kronecker(5), (2, 2)) == quiver_moduli(kronecker(5), (2, 8))
+
+    # the Donaldson--Thomas invariant vanishes when nothing of dimension vector `d` is
+    # stable, which is an exact cancellation in the plethystic logarithm
+    @test_throws ArgumentError quiver_moduli(reshape([0], 1, 1), (4,))
+    @test_throws ArgumentError quiver_moduli(kronecker(1), (3, 3))
+    for n in 2:5
+      @test_throws ArgumentError quiver_moduli(kronecker(2), (n, n))
+    end
+
+    for (Q, d) in [(kronecker(3), (2, 2)), (kronecker(4), (2, 4)), (wall, (2, 2, 2))]
+      X = quiver_moduli(Q, d)
+      n = dimension(X)
+      @test X[0, 0] == 1
+      # these Hodge structures are of Hodge--Tate type, and intersection cohomology of a
+      # projective variety still satisfies Poincaré duality
+      @test all(p == q || X[p, q] == 0 for p in 0:n, q in 0:n)
+      @test all(X[p, p] == X[n - p, n - p] >= 0 for p in 0:n)
+    end
   end
 
   @testset "Brauer--Severi schemes" begin

@@ -1084,6 +1084,19 @@ Stability conditions can be produced with [`slope`](@ref); if left unspecified t
 canonical stability condition is used, given by the antisymmetrised Euler form pairing
 with `d`.
 
+If some proper subdimension vector has the slope of `d` there are strictly semistable
+representations, the moduli space is singular, and what is returned is its *intersection*
+Hodge diamond, using Theorem 1.1 of [MR4000572]. That agrees with the ordinary one in the
+smooth case, so this is a single formula throughout, but beware that the answer is then not
+the Hodge diamond of a variety.
+
+  - [MR4000572] Meinhardt--Reineke, Donaldson--Thomas invariants versus intersection
+    cohomology of quiver moduli. J. Reine Angew. Math. 754 (2019), 143--178.
+
+That result needs the stability condition to be generic for the slope of `d`, meaning that
+the antisymmetrised Euler form vanishes on the dimension vectors of that slope, and it
+needs stable representations to exist; both are checked.
+
 # Examples
 
 For the 2-Kronecker quiver and dimension vector ``(1,1)`` a representation is given by two
@@ -1126,6 +1139,35 @@ true
 julia> quiver_moduli(Q, (1, 1, 1); mu = slope((1, 0, 0))) == Pn(2)
 true
 ```
+
+For the 3-Kronecker quiver and dimension vector ``(2,2)`` the representations of dimension
+vector ``(1,1)`` have the same slope, so the moduli space is singular:
+
+```jldoctest
+julia> kronecker(d) = [0 d; 0 0];
+
+julia> quiver_moduli(kronecker(3), (2, 2)) == Pn(5)
+true
+```
+
+Reflection functors identify moduli spaces for different dimension vectors, which the
+intersection Hodge diamonds see:
+
+```jldoctest
+julia> kronecker(d) = [0 d; 0 0];
+
+julia> quiver_moduli(kronecker(4), (3, 3)) == quiver_moduli(kronecker(4), (3, 9))
+true
+```
+
+There is nothing to compute when no representation of dimension vector `d` is stable:
+
+```jldoctest
+julia> kronecker(d) = [0 d; 0 0];
+
+julia> quiver_moduli(kronecker(2), (2, 2))
+ERROR: ArgumentError: there are no stable representations of dimension vector [2, 2]
+```
 """
 function quiver_moduli(Q, d; mu=nothing)
   adjacency = Matrix{Int}(Q)
@@ -1133,7 +1175,6 @@ function quiver_moduli(Q, d; mu=nothing)
   size(adjacency) == (n, n) ||
     throw(ArgumentError("adjacency matrix and dimension vector do not match"))
   _is_acyclic(adjacency) || throw(ArgumentError("Q needs to be acyclic"))
-  gcd(collect(d)) == 1 || throw(ArgumentError("dimension vector is not coprime"))
 
   # Euler form of the quiver
   euler_form = [(i == j ? 1 : 0) - adjacency[i, j] for i in 1:n, j in 1:n]
@@ -1147,8 +1188,52 @@ function quiver_moduli(Q, d; mu=nothing)
     mu
   end
 
-  # indexing set of Corollary 5.5: dimension vectors below d with bigger slope,
-  # together with the zero vector and d itself
+  # a semistable representation is strictly semistable exactly when it has a proper
+  # subrepresentation of the same slope, so the moduli space is smooth exactly when no
+  # proper subdimension vector has the slope of `d`
+  lattice = _same_slope(target, stability)
+  length(lattice) == 2 || return HodgeDiamond(
+    _intersection_quiver_moduli(adjacency, euler_form, target, stability, lattice)
+  )
+
+  stack = _semistable_stack(adjacency, euler_form, target, stability)
+  return HodgeDiamond(_lefschetz_polynomial((v - 1) * stack); from_variety=true)
+end
+
+"The dimension vectors between `0` and `target`, inclusive, of the same slope as `target`."
+function _same_slope(target::Vector{Int}, stability)
+  zero_vector = zeros(Int, length(target))
+  lattice = [zero_vector]
+  for candidate in Iterators.product((0:di for di in target)...)
+    vector = collect(candidate)
+    (vector == zero_vector || vector == target) && continue
+    stability(vector) == stability(target) && push!(lattice, vector)
+  end
+  push!(lattice, target)
+  return lattice
+end
+
+"Turn a polynomial in the Lefschetz class into a Hodge diamond concentrated on the diagonal."
+function _lefschetz_polynomial(value::FracElem)
+  isone(denominator(value)) ||
+    throw(ErrorException("result needs to be a polynomial"))
+  poincare = numerator(value)
+  return build_polynomial(
+    (_integral(coeff(poincare, i)), [i, i]) for i in 0:degree(poincare)
+  )
+end
+
+# Class of the stack of semistable representations of dimension vector `target`, that is
+# ``[R^{ss}_d]/[G_d]``, by the Harder--Narasimhan recursion of Corollary 5.5 of [MR1974891]
+# resolved through a transfer matrix. Nothing here needs `target` to be coprime.
+function _semistable_stack(
+  adjacency::Matrix{Int}, euler_form::Matrix{Int}, target::Vector{Int}, stability
+)
+  n = length(target)
+  iszero(target) && return one(Kv)
+
+  # indexing set of Corollary 5.5: dimension vectors below the target with bigger slope,
+  # together with the zero vector and the target itself
   zero_vector = zeros(Int, n)
   indexing = [zero_vector]
   for candidate in Iterators.product((0:di for di in target)...)
@@ -1184,13 +1269,126 @@ function quiver_moduli(Q, d; mu=nothing)
     solution[i] = -accumulated//transfer[i, i]
   end
 
-  result = solution[1] * (1 - v)
-  isone(denominator(result)) || error("result needs to be a polynomial")
-  poincare = numerator(result)
+  # the solve produces the class up to a sign, so that `(1 - L) * solution[1]` is the
+  # class of the moduli space when that one is smooth
+  return -solution[1]
+end
 
-  # substitute v = xy
-  return HodgeDiamond(
-    diagonal_polynomial(_integral(coeff(poincare, i)) for i in 0:degree(poincare))
+# ── intersection cohomology of quiver moduli ─────────────────────────────────────
+#
+# Meinhardt--Reineke [MR4000572] identify the Donaldson--Thomas invariants of a quiver with
+# the intersection cohomology of its moduli space of semistable representations. With
+# ``\Lambda_\mu`` the monoid of dimension vectors of the slope of `d`, their Lemma in §3.1
+# and Theorem 3.4 give
+#
+#     \sum_{e\in\Lambda_\mu} L^{(e,e)/2}[𝔐^{ss}_e] t^e
+#       = Exp( (\sum_{0\ne e\in\Lambda_\mu} DT_e t^e) / (L^{1/2}-L^{-1/2}) ),
+#     E(IH^*(M^{ss}_d)) = L^{\dim/2} DT_d,   \dim M^{ss}_d = 1 - (d,d),
+#
+# where ``(-,-)`` is the Euler form of the quiver, so that ``\dim 𝔐^{ss}_e = -(e,e)``. This
+# is the same statement as the one of Mozgovoy--Reineke used above for a curve, both being
+# instances of Meinhardt's theory for categories of homological dimension one.
+#
+# Quiver moduli have Hodge structures concentrated on the diagonal, so everything is a
+# rational function in the Lefschetz class alone and the half powers only need a square
+# root ``w`` of it, with ``L^{1/2} = -w`` because ``L^{1/2}`` sits in odd degree. Adams
+# operations are then the plain substitution ``w \mapsto w^n``.
+#
+# For a dimension vector that is primitive in ``\Lambda_\mu`` the logarithm is its own
+# leading term and this returns the class of the moduli space again, which is what the
+# smooth branch of `quiver_moduli` computes; the tests check that.
+
+const Rw, _w_generator = polynomial_ring(QQ, :w)
+const Kw = fraction_field(Rw)
+#: a square root of the Lefschetz class, so that `L^{1/2}` is `-w`
+const w = Kw(_w_generator)
+
+"Move a rational function in the Lefschetz class to one in its square root."
+_to_square_root(value::FracElem) =
+  evaluate(numerator(value), w^2)//evaluate(denominator(value), w^2)
+
+"Adams operation ``\\psi^n``, the substitution ``w \\mapsto w^n``."
+_adams(value::FracElem, n::Int) =
+  evaluate(numerator(value), w^n)//evaluate(denominator(value), w^n)
+
+# Product of two series indexed by dimension vectors, dropping everything above `bound`.
+function _bounded_convolve(A::Dict{Vector{Int}}, B::Dict{Vector{Int}}, bound)
+  product = Dict{Vector{Int},elem_type(Kw)}()
+  for (e, first) in A, (f, second) in B
+    sum_vector = e + f
+    all(sum_vector .<= bound) || continue
+    product[sum_vector] = get(product, sum_vector, zero(Kw)) + first * second
+  end
+  return product
+end
+
+function _intersection_quiver_moduli(
+  adjacency::Matrix{Int},
+  euler_form::Matrix{Int},
+  target::Vector{Int},
+  stability,
+  lattice::Vector{Vector{Int}},
+)
+  n = length(target)
+  pairing(e, f) = sum(e[a] * euler_form[a, b] * f[b] for a in 1:n, b in 1:n)
+
+  # Meinhardt--Reineke need the stability condition to be generic for this slope, meaning
+  # that the antisymmetrised Euler form vanishes on the dimension vectors of that slope
+  for e in lattice, f in lattice
+    iszero(pairing(e, f) - pairing(f, e)) || throw(
+      ArgumentError(
+        "the stability condition is not generic for the slope of $target, " *
+        "so intersection cohomology is out of reach",
+      ),
+    )
+  end
+
+  # the generating series, without its constant term
+  series = Dict{Vector{Int},elem_type(Kw)}()
+  for e in lattice
+    iszero(e) && continue
+    stack = _to_square_root(_semistable_stack(adjacency, euler_form, e, stability))
+    series[e] = (-w)^pairing(e, e) * stack
+  end
+
+  # the ordinary logarithm log(1 + x) = Σ_k (-1)^{k-1}/k x^k; the kth power is supported on
+  # sums of k non-zero dimension vectors, so the sum stops at |target|
+  logarithm = Dict{Vector{Int},elem_type(Kw)}()
+  power = series
+  for k in 1:sum(target)
+    isempty(power) && break
+    scale = Kw((-1)^(k - 1))//Kw(k)
+    for (e, value) in power
+      logarithm[e] = get(logarithm, e, zero(Kw)) + scale * value
+    end
+    power = _bounded_convolve(power, series, target)
+  end
+
+  # and the plethystic one, Log(1 + x) = Σ_n μ(n)/n ψ^n(log(1 + x)); only those n with
+  # n * e = target for some e contribute, that is the divisors of gcd(target)
+  total = get(logarithm, target, zero(Kw))
+  common = gcd(target)
+  for k in 2:common
+    (is_zero(common % k) && !iszero(_mobius(k))) || continue
+    piece = get(logarithm, target .÷ k, zero(Kw))
+    total += Kw(_mobius(k))//Kw(k) * _adams(piece, k)
+  end
+
+  # DT_d = (L^{1/2} - L^{-1/2}) [Log Q]_{t^d}, then E(IH^*) = L^{dim/2} DT_d
+  invariant = ((-w) - inv(-w)) * total
+  result = (-w)^(1 - pairing(target, target)) * invariant
+  iszero(result) &&
+    throw(ArgumentError("there are no stable representations of dimension vector $target"))
+
+  # intersection cohomology of these moduli spaces is concentrated in even degree, so the
+  # answer has to be a polynomial in w^2; that is a real check on the whole computation
+  isone(denominator(result)) ||
+    throw(ErrorException("intersection cohomology is not polynomial"))
+  polynomial = numerator(result)
+  all(isodd(i) ? is_zero(coeff(polynomial, i)) : true for i in 0:degree(polynomial)) ||
+    throw(ErrorException("intersection cohomology in odd degree"))
+  return build_polynomial(
+    (_integral(coeff(polynomial, 2i)), [i, i]) for i in 0:(degree(polynomial) ÷ 2)
   )
 end
 
