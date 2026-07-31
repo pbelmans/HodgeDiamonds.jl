@@ -82,11 +82,9 @@ true
 """
 function from_polynomial(f::HPoly; from_variety::Bool=false)
   diamond = HodgeDiamond(f)
-  if from_variety
-    @assert arises_from_variety(diamond) "the Hodge diamond does not satisfy the " *
-      "conditions satisfied by a smooth " *
-      "projective variety"
-  end
+  from_variety &&
+    !arises_from_variety(diamond) &&
+    throw(ArgumentError("the Hodge diamond does not arise from a smooth projective variety"))
   return diamond
 end
 
@@ -288,7 +286,8 @@ julia> Pn(10)(1, 1)
 ```
 """
 function (X::HodgeDiamond)(i::Integer)
-  @assert i >= -lefschetz_power(X) "cannot untwist by more than the Lefschetz power"
+  i >= -lefschetz_power(X) ||
+    throw(ArgumentError("cannot untwist by more than the Lefschetz power"))
   twist = (x * y)^abs(i)
   return HodgeDiamond(i >= 0 ? X.f * twist : divexact(X.f, twist))
 end
@@ -581,7 +580,8 @@ julia> signature(K3())
 ```
 """
 function signature(X::HodgeDiamond)
-  @assert arises_from_variety(X)
+  arises_from_variety(X) ||
+    throw(ArgumentError("the signature needs a compact Kähler manifold"))
   d = _size(X)
   return sum((-1)^p * X[p, q] for p in 0:d, q in 0:d)
 end
@@ -788,7 +788,8 @@ mirror(hypersurface(5, 3))
 ```
 """
 function mirror(X::HodgeDiamond)
-  @assert arises_from_variety(X)
+  arises_from_variety(X) ||
+    throw(ArgumentError("the mirror needs the Hodge diamond of a variety"))
   n = dimension(X)
   builder = MPolyBuildCtx(R)
   for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))

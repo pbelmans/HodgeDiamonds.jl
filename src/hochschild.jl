@@ -18,8 +18,10 @@ struct HochschildHomology
   L::Vector{BigInt}
 
   function HochschildHomology(L::AbstractVector{<:Integer})
-    @assert isodd(length(L)) "length needs to be odd, to reflect Serre duality"
-    @assert all(L[i] == L[end + 1 - i] for i in eachindex(L)) "Serre duality is not satisfied"
+    isodd(length(L)) ||
+      throw(ArgumentError("length needs to be odd, to reflect Serre duality"))
+    all(L[i] == L[end + 1 - i] for i in eachindex(L)) ||
+      throw(ArgumentError("Serre duality is not satisfied"))
     return new(BigInt.(L))
   end
 end

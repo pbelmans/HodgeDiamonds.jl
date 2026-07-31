@@ -24,8 +24,8 @@ const R, x, y = hodge_ring()
     @test from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
     @test Matrix(K3()) == BigInt[1 0 1; 0 20 0; 1 0 1]
     @test_throws ArgumentError from_matrix([1 2 3; 4 5 6])
-    @test_throws AssertionError from_matrix([1 2; 0 1]; from_variety=true)
-    @test_throws AssertionError from_polynomial(1 + x; from_variety=true)
+    @test_throws ArgumentError from_matrix([1 2; 0 1]; from_variety=true)
+    @test_throws ArgumentError from_polynomial(1 + x; from_variety=true)
 
     # trailing zero rows and columns get dropped
     @test Matrix(from_matrix([1 0 0; 0 0 0; 0 0 0])) == BigInt[1;;]
@@ -55,7 +55,7 @@ const R, x, y = hodge_ring()
     X = K3()
     @test X(3)(-3) == X
     @test lefschetz_power(X(4)) == 4
-    @test_throws AssertionError X(-1)
+    @test_throws ArgumentError X(-1)
     @test Pn(10)(1, 1) == 11
     @test dimension(lefschetz()) == 0
     @test dimension(zero(HodgeDiamond)) == -1
@@ -139,8 +139,8 @@ const R, x, y = hodge_ring()
     @test repr(MIME("text/plain"), h) ==
       "  -2   -1   0    1   2\n  1    0    22   0   1"
     @test repr(h) == "Hochschild homology vector of dimension 2"
-    @test_throws AssertionError from_list([1, 2])
-    @test_throws AssertionError from_list([1, 0, 2])
+    @test_throws ArgumentError from_list([1, 2])
+    @test_throws ArgumentError from_list([1, 0, 2])
   end
 
   @testset "curves, surfaces and abelian varieties" begin
