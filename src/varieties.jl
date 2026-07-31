@@ -125,7 +125,7 @@ function surface(genus::Integer, irregularity::Integer, h11::Integer)
     (genus >= 0 && irregularity >= 0 && h11 >= 0) ||
         throw(ArgumentError("invariants need to be non-negative"))
     return from_matrix(
-        [1 irregularity genus; irregularity h11 irregularity; genus irregularity 1],
+        [1 irregularity genus; irregularity h11 irregularity; genus irregularity 1]
     )
 end
 
@@ -168,10 +168,17 @@ true
 """
 function symmetric_power(n::Integer, genus::Integer)
     n < 0 && return zero(HodgeDiamond)
-    hodge(p, q) =
-        p > q ? hodge(q, p) :
-        p + q > n ? hodge(n - p, n - q) :
-        sum(binomial(BigInt(genus), p - k) * binomial(BigInt(genus), q - k) for k in 0:p)
+    function hodge(p, q)
+        return if p > q
+            hodge(q, p)
+        elseif p + q > n
+            hodge(n - p, n - q)
+        else
+            sum(
+                binomial(BigInt(genus), p - k) * binomial(BigInt(genus), q - k) for k in 0:p
+            )
+        end
+    end
     return from_matrix([hodge(i, j) for i in 0:n, j in 0:n])
 end
 
@@ -246,13 +253,14 @@ true
 function kummer_resolution(dimension::Integer)
     g = dimension
     builder = MPolyBuildCtx(R)
-    for (coefficient, exponents) in
-        zip(coefficients(polynomial(jacobian(g))), exponent_vectors(polynomial(jacobian(g))))
+    for (coefficient, exponents) in zip(
+        coefficients(polynomial(jacobian(g))), exponent_vectors(polynomial(jacobian(g)))
+    )
         iseven(exponents[1] + exponents[2]) && push_term!(builder, coefficient, exponents)
     end
     invariant = from_polynomial(finish(builder))
     return invariant +
-           sum((2^(2g) * point()(i) for i in 1:(g - 1)); init = zero(HodgeDiamond))
+           sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond))
 end
 
 # ── complete intersections ───────────────────────────────────────────────────────
@@ -278,8 +286,7 @@ end
 function _intersection_denominator(d::Integer, N::Int)
     dense = dense_one(N)
     for k in 1:d, j in 0:(k - 2)
-        (j + 1 <= N && k - 1 - j <= N) &&
-            (dense[j + 2, k - j] -= binomial(BigInt(d), k))
+        (j + 1 <= N && k - 1 - j <= N) && (dense[j + 2, k - j] -= binomial(BigInt(d), k))
     end
     return dense
 end
@@ -365,7 +372,7 @@ function complete_intersection(degrees, dimension::Integer)
     for i in 0:N
         M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
     end
-    return from_matrix(M; from_variety = true)
+    return from_matrix(M; from_variety=true)
 end
 
 # (1 + a)(1 + b) - 1, so that `dense_one(N) + _one_plus(N)` is (1 + a)(1 + b)
@@ -605,9 +612,7 @@ function weighted_hypersurface(degree::Integer, weights)
         degree >= weight ||
             throw(ArgumentError("degree $degree is smaller than the weight $weight"))
         series = series_multiply(
-            series,
-            series_one_minus_power(Int(degree - weight), precision),
-            precision,
+            series, series_one_minus_power(Int(degree - weight), precision), precision
         )
         series = series_multiply(
             series,
@@ -630,7 +635,7 @@ function weighted_hypersurface(degree::Integer, weights)
     for i in 0:(n - 1)
         M[i + 1, n - i] = hodge(i, n - i - 1)
     end
-    return from_matrix(M; from_variety = true)
+    return from_matrix(M; from_variety=true)
 end
 
 """
@@ -768,8 +773,9 @@ function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
     for j in (i - 1):g
         series = series_one_minus_power(4j, precision)
         for l in (j - i + 2):(i + j - 2)
-            series =
-                series_multiply(series, series_one_minus_power(2l, precision), precision)
+            series = series_multiply(
+                series, series_one_minus_power(2l, precision), precision
+            )
         end
         for l in 1:(2i - 2)
             series = series_multiply(
@@ -806,7 +812,7 @@ function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
             )
         end
     end
-    return from_polynomial(finish(builder); from_variety = true)
+    return from_polynomial(finish(builder); from_variety=true)
 end
 
 """
@@ -852,38 +858,119 @@ function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
     for degree in 0:(i * (2g - 2i))
         coefficient = sum(
             multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i;
-            init = BigInt(0),
+            init=BigInt(0),
         )
         is_zero(coefficient) || push_term!(builder, ZZ(coefficient), [degree, degree])
     end
-    return from_polynomial(finish(builder); from_variety = true)
+    return from_polynomial(finish(builder); from_variety=true)
 end
 
 const FANO_THREEFOLD_H12 = Dict{Tuple{Int,Int},Int}(
-    (1, 1) => 52, (1, 2) => 30, (1, 3) => 20, (1, 4) => 14, (1, 5) => 10,
-    (1, 6) => 7, (1, 7) => 5, (1, 8) => 3, (1, 9) => 2, (1, 10) => 0,
-    (1, 11) => 21, (1, 12) => 10, (1, 13) => 5, (1, 14) => 2, (1, 15) => 0,
-    (1, 16) => 0, (1, 17) => 0,
-    (2, 1) => 22, (2, 2) => 20, (2, 3) => 11, (2, 4) => 10, (2, 5) => 6,
-    (2, 6) => 9, (2, 7) => 5, (2, 8) => 9, (2, 9) => 5, (2, 10) => 3,
-    (2, 11) => 5, (2, 12) => 3, (2, 13) => 2, (2, 14) => 1, (2, 15) => 4,
-    (2, 16) => 2, (2, 17) => 1, (2, 18) => 2, (2, 19) => 2, (2, 20) => 0,
-    (2, 21) => 0, (2, 22) => 0, (2, 23) => 1, (2, 24) => 0, (2, 25) => 1,
-    (2, 26) => 0, (2, 27) => 0, (2, 28) => 1, (2, 29) => 0, (2, 30) => 0,
-    (2, 31) => 0, (2, 32) => 0, (2, 33) => 0, (2, 34) => 0, (2, 35) => 0,
+    (1, 1) => 52,
+    (1, 2) => 30,
+    (1, 3) => 20,
+    (1, 4) => 14,
+    (1, 5) => 10,
+    (1, 6) => 7,
+    (1, 7) => 5,
+    (1, 8) => 3,
+    (1, 9) => 2,
+    (1, 10) => 0,
+    (1, 11) => 21,
+    (1, 12) => 10,
+    (1, 13) => 5,
+    (1, 14) => 2,
+    (1, 15) => 0,
+    (1, 16) => 0,
+    (1, 17) => 0,
+    (2, 1) => 22,
+    (2, 2) => 20,
+    (2, 3) => 11,
+    (2, 4) => 10,
+    (2, 5) => 6,
+    (2, 6) => 9,
+    (2, 7) => 5,
+    (2, 8) => 9,
+    (2, 9) => 5,
+    (2, 10) => 3,
+    (2, 11) => 5,
+    (2, 12) => 3,
+    (2, 13) => 2,
+    (2, 14) => 1,
+    (2, 15) => 4,
+    (2, 16) => 2,
+    (2, 17) => 1,
+    (2, 18) => 2,
+    (2, 19) => 2,
+    (2, 20) => 0,
+    (2, 21) => 0,
+    (2, 22) => 0,
+    (2, 23) => 1,
+    (2, 24) => 0,
+    (2, 25) => 1,
+    (2, 26) => 0,
+    (2, 27) => 0,
+    (2, 28) => 1,
+    (2, 29) => 0,
+    (2, 30) => 0,
+    (2, 31) => 0,
+    (2, 32) => 0,
+    (2, 33) => 0,
+    (2, 34) => 0,
+    (2, 35) => 0,
     (2, 36) => 0,
-    (3, 1) => 8, (3, 2) => 3, (3, 3) => 3, (3, 4) => 2, (3, 5) => 0,
-    (3, 6) => 1, (3, 7) => 1, (3, 8) => 0, (3, 9) => 3, (3, 10) => 0,
-    (3, 11) => 1, (3, 12) => 0, (3, 13) => 0, (3, 14) => 1, (3, 15) => 0,
-    (3, 16) => 0, (3, 17) => 0, (3, 18) => 0, (3, 19) => 0, (3, 20) => 0,
-    (3, 21) => 0, (3, 22) => 0, (3, 23) => 0, (3, 24) => 0, (3, 25) => 0,
-    (3, 26) => 0, (3, 27) => 0, (3, 28) => 0, (3, 29) => 0, (3, 30) => 0,
+    (3, 1) => 8,
+    (3, 2) => 3,
+    (3, 3) => 3,
+    (3, 4) => 2,
+    (3, 5) => 0,
+    (3, 6) => 1,
+    (3, 7) => 1,
+    (3, 8) => 0,
+    (3, 9) => 3,
+    (3, 10) => 0,
+    (3, 11) => 1,
+    (3, 12) => 0,
+    (3, 13) => 0,
+    (3, 14) => 1,
+    (3, 15) => 0,
+    (3, 16) => 0,
+    (3, 17) => 0,
+    (3, 18) => 0,
+    (3, 19) => 0,
+    (3, 20) => 0,
+    (3, 21) => 0,
+    (3, 22) => 0,
+    (3, 23) => 0,
+    (3, 24) => 0,
+    (3, 25) => 0,
+    (3, 26) => 0,
+    (3, 27) => 0,
+    (3, 28) => 0,
+    (3, 29) => 0,
+    (3, 30) => 0,
     (3, 31) => 0,
-    (4, 1) => 1, (4, 2) => 1, (4, 3) => 0, (4, 4) => 0, (4, 5) => 0,
-    (4, 6) => 0, (4, 7) => 0, (4, 8) => 0, (4, 9) => 0, (4, 10) => 0,
-    (4, 11) => 0, (4, 12) => 0, (4, 13) => 0,
-    (5, 1) => 0, (5, 2) => 0, (5, 3) => 0,
-    (6, 1) => 0, (7, 1) => 0, (8, 1) => 0, (9, 1) => 0, (10, 1) => 0,
+    (4, 1) => 1,
+    (4, 2) => 1,
+    (4, 3) => 0,
+    (4, 4) => 0,
+    (4, 5) => 0,
+    (4, 6) => 0,
+    (4, 7) => 0,
+    (4, 8) => 0,
+    (4, 9) => 0,
+    (4, 10) => 0,
+    (4, 11) => 0,
+    (4, 12) => 0,
+    (4, 13) => 0,
+    (5, 1) => 0,
+    (5, 2) => 0,
+    (5, 3) => 0,
+    (6, 1) => 0,
+    (7, 1) => 0,
+    (8, 1) => 0,
+    (9, 1) => 0,
+    (10, 1) => 0,
 )
 
 """
@@ -917,10 +1004,7 @@ function fano_threefold(rank::Integer, identifier::Integer)
     haskey(FANO_THREEFOLD_H12, key) ||
         throw(ArgumentError("no Fano threefold with rank $rank and number $identifier"))
     h12 = FANO_THREEFOLD_H12[key]
-    return from_matrix(
-        [1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1];
-        from_variety = true,
-    )
+    return from_matrix([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)
 end
 
 # ── other ───────────────────────────────────────────────────────────────────────
@@ -931,9 +1015,11 @@ function _manin(n::Int)
     n in (2, 3) && return one(R)
     return get!(MANIN_CACHE, n) do
         _manin(n - 1) +
-        x * y * sum(
+        x *
+        y *
+        sum(
             binomial(BigInt(n - 2), i) * _manin(i + 1) * _manin(n - i) for i in 2:(n - 2);
-            init = zero(R),
+            init=zero(R),
         )
     end
 end

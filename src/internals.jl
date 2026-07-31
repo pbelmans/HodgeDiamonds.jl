@@ -14,8 +14,9 @@
 # greater than `N` are dropped. Entries are allocated individually (not with
 # `zeros(BigInt, …)`, which would share one object across all slots).
 
-zero_coefficients(::Type{T}, size::Int) where {T<:Number} =
-    T[zero(T) for _ in 1:size, _ in 1:size]
+function zero_coefficients(::Type{T}, size::Int) where {T<:Number}
+    return T[zero(T) for _ in 1:size, _ in 1:size]
+end
 zero_coefficients(size::Int) = zero_coefficients(BigInt, size)
 
 function dense_monomial(i::Int, j::Int, coefficient::T, N::Int) where {T<:Number}
@@ -36,11 +37,7 @@ Zero coefficients are skipped, so the cost is `nnz(first) * nnz(second)`: multip
 dense accumulator by a sparse factor is cheap, which is the access pattern of every
 caller.
 """
-function multiply_truncated(
-    first::Matrix{T},
-    second::Matrix{T},
-    N::Int,
-) where {T<:Number}
+function multiply_truncated(first::Matrix{T}, second::Matrix{T}, N::Int) where {T<:Number}
     product = zero_coefficients(T, N + 1)
     @inbounds for column in axes(second, 2), rowindex in axes(second, 1)
         coefficient = second[rowindex, column]
@@ -127,11 +124,7 @@ function series_one_minus_power(::Type{T}, e::Int, N::Int) where {T<:Number}
 end
 series_one_minus_power(e::Int, N::Int) = series_one_minus_power(BigInt, e, N)
 
-function series_multiply(
-    first::Vector{T},
-    second::Vector{T},
-    N::Int,
-) where {T<:Number}
+function series_multiply(first::Vector{T}, second::Vector{T}, N::Int) where {T<:Number}
     product = [zero(T) for _ in 0:N]
     @inbounds for i in eachindex(first)
         iszero(first[i]) && continue
@@ -165,9 +158,7 @@ Multiply the dense bivariate polynomial by `series` evaluated at ``L = xy``, tru
 bidegree `(N, N)`.
 """
 function multiply_by_lefschetz_series(
-    dense::Matrix{T},
-    series::Vector{T},
-    N::Int,
+    dense::Matrix{T}, series::Vector{T}, N::Int
 ) where {T<:Number}
     product = zero_coefficients(T, N + 1)
     @inbounds for j in axes(dense, 2), i in axes(dense, 1)

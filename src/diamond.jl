@@ -54,17 +54,18 @@ julia> from_matrix([1 0 1; 0 20 0; 1 0 1]) == K3()
 true
 ```
 """
-function from_matrix(m::AbstractMatrix{<:Integer}; from_variety::Bool = false)
+function from_matrix(m::AbstractMatrix{<:Integer}; from_variety::Bool=false)
     size(m, 1) == size(m, 2) || throw(ArgumentError("matrix needs to be square"))
     builder = MPolyBuildCtx(R)
     for j in axes(m, 2), i in axes(m, 1)
         iszero(m[i, j]) || push_term!(builder, ZZ(m[i, j]), [i - 1, j - 1])
     end
-    return from_polynomial(finish(builder); from_variety = from_variety)
+    return from_polynomial(finish(builder); from_variety=from_variety)
 end
 
-from_matrix(rows::AbstractVector{<:AbstractVector{<:Integer}}; kwargs...) =
-    from_matrix(permutedims(reduce(hcat, rows)); kwargs...)
+function from_matrix(rows::AbstractVector{<:AbstractVector{<:Integer}}; kwargs...)
+    return from_matrix(permutedims(reduce(hcat, rows)); kwargs...)
+end
 
 """
     from_polynomial(f; from_variety = false)
@@ -81,12 +82,12 @@ julia> from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
 true
 ```
 """
-function from_polynomial(f::HPoly; from_variety::Bool = false)
+function from_polynomial(f::HPoly; from_variety::Bool=false)
     diamond = HodgeDiamond(f)
     if from_variety
         @assert arises_from_variety(diamond) "the Hodge diamond does not satisfy the " *
-                                             "conditions satisfied by a smooth " *
-                                             "projective variety"
+            "conditions satisfied by a smooth " *
+            "projective variety"
     end
     return diamond
 end
@@ -402,8 +403,7 @@ julia> dimension(inoue())
 """
 function dimension(X::HodgeDiamond)
     is_zero(X.f) && return -1
-    return maximum(exponents[2] for exponents in exponent_vectors(X.f)) -
-           lefschetz_power(X)
+    return maximum(exponents[2] for exponents in exponent_vectors(X.f)) - lefschetz_power(X)
 end
 
 """
@@ -477,7 +477,7 @@ function betti(X::HodgeDiamond)
     d = _size(X)
     M = Matrix(X)
     return [
-        sum((M[j + 1, i - j + 1] for j in max(0, i - d):min(i, d)); init = BigInt(0)) for
+        sum((M[j + 1, i - j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
         i in 0:(2d)
     ]
 end
@@ -543,7 +543,7 @@ julia> row(moduli_vector_bundles(3, 1, 9), 3; truncate = true)
  9
 ```
 """
-function row(X::HodgeDiamond, i::Integer; truncate::Bool = false)
+function row(X::HodgeDiamond, i::Integer; truncate::Bool=false)
     entries = X[i]
     if truncate
         while length(entries) > 1 && is_zero(first(entries)) && is_zero(last(entries))
@@ -612,7 +612,7 @@ julia> [euler(hilbn(K3(), n)) for n in 0:5]
 """
 function euler(X::HodgeDiamond)
     numbers = betti(X)
-    return sum(((-1)^(i - 1) * numbers[i] for i in eachindex(numbers)); init = BigInt(0))
+    return sum(((-1)^(i - 1) * numbers[i] for i in eachindex(numbers)); init=BigInt(0))
 end
 
 """
@@ -635,7 +635,7 @@ true
 ```
 """
 holomorphic_euler(X::HodgeDiamond) =
-    sum(((-1)^i * X[i, 0] for i in 0:_size(X)); init = BigInt(0))
+    sum(((-1)^i * X[i, 0] for i in 0:_size(X)); init=BigInt(0))
 
 """
     hirzebruch(X)
@@ -689,8 +689,8 @@ function hochschild(X::HodgeDiamond)
     d = _size(X)
     M = Matrix(X)
     return from_list([
-        sum((M[d - i + j + 1, j + 1] for j in max(0, i - d):min(i, d)); init = BigInt(0))
-        for i in 0:(2d)
+        sum((M[d - i + j + 1, j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
+        i in 0:(2d)
     ])
 end
 
@@ -722,12 +722,10 @@ true
 ```
 """
 function blowup(
-    X::HodgeDiamond,
-    Y::HodgeDiamond;
-    codimension::Union{Nothing,Integer} = nothing,
+    X::HodgeDiamond, Y::HodgeDiamond; codimension::Union{Nothing,Integer}=nothing
 )
     depth = codimension === nothing ? dimension(X) - dimension(Y) : codimension
-    return X + sum((Y(i) for i in 1:(depth - 1)); init = zero(HodgeDiamond))
+    return X + sum((Y(i) for i in 1:(depth - 1)); init=zero(HodgeDiamond))
 end
 
 """
@@ -749,7 +747,7 @@ true
 ```
 """
 bundle(X::HodgeDiamond, rank::Integer) =
-    sum((X(i) for i in 0:(rank - 1)); init = zero(HodgeDiamond))
+    sum((X(i) for i in 0:(rank - 1)); init=zero(HodgeDiamond))
 
 """
     mirror(X)
@@ -793,11 +791,14 @@ end
 function _pad(text::AbstractString, width::Int, centered::Bool)
     padding = width - length(text)
     padding <= 0 && return String(text)
-    return centered ? " "^(padding ÷ 2) * text * " "^(padding - padding ÷ 2) :
-           text * " "^padding
+    return if centered
+        " "^(padding ÷ 2) * text * " "^(padding - padding ÷ 2)
+    else
+        text * " "^padding
+    end
 end
 
-function _render(table::Vector{Vector{String}}; centered::Bool = true)
+function _render(table::Vector{Vector{String}}; centered::Bool=true)
     isempty(table) && return ""
     columns = maximum(length, table)
     widths = [maximum(length(get(cells, j, "")) for cells in table) for j in 1:columns]
@@ -840,8 +841,7 @@ function _grid(X::HodgeDiamond; hide_zeroes::Bool, quarter::Bool)
     if hide_zeroes
         # drop the leading and trailing blanks common to every row, to align left
         leading = minimum(
-            something(findfirst(!isempty, cells), length(cells) + 1) - 1 for
-            cells in table
+            something(findfirst(!isempty, cells), length(cells) + 1) - 1 for cells in table
         )
         trailing = minimum(
             length(cells) - something(findlast(!isempty, cells), 0) for cells in table
@@ -906,19 +906,16 @@ julia> pprint(Pn(2) * curve(3); hide_zeroes = true, quarter = true)
   3
 ```
 """
-pprint(
-    io::IO,
-    X::HodgeDiamond;
-    hide_zeroes::Bool = HIDE_ZEROES[],
-    quarter::Bool = QUARTER[],
-) = print(io, _render(_grid(X; hide_zeroes = hide_zeroes, quarter = quarter)))
+pprint(io::IO, X::HodgeDiamond; hide_zeroes::Bool=HIDE_ZEROES[], quarter::Bool=QUARTER[]) =
+    print(io, _render(_grid(X; hide_zeroes=hide_zeroes, quarter=quarter)))
 
 pprint(X::HodgeDiamond; kwargs...) = pprint(stdout, X; kwargs...)
 
 Base.show(io::IO, ::MIME"text/plain", X::HodgeDiamond) = pprint(io, X)
 
-Base.show(io::IO, X::HodgeDiamond) =
-    print(io, "Hodge diamond of size $(_size(X) + 1) and dimension $(dimension(X))")
+function Base.show(io::IO, X::HodgeDiamond)
+    return print(io, "Hodge diamond of size $(_size(X) + 1) and dimension $(dimension(X))")
+end
 
 """
     show(io, MIME("text/latex"), X::HodgeDiamond)
@@ -939,12 +936,14 @@ julia> show(stdout, MIME("text/latex"), K3())
 ```
 """
 function Base.show(io::IO, ::MIME"text/latex", X::HodgeDiamond)
-    table = _grid(X; hide_zeroes = HIDE_ZEROES[], quarter = QUARTER[])
+    table = _grid(X; hide_zeroes=HIDE_ZEROES[], quarter=QUARTER[])
     println(io, "\\begin{tabular}{", "c"^maximum(length, table), "}")
     for cells in table
-        println(io, join((isempty(cell) ? "" : "\$$cell\$" for cell in cells), " & "), " \\\\")
+        println(
+            io, join((isempty(cell) ? "" : "\$$cell\$" for cell in cells), " & "), " \\\\"
+        )
     end
-    print(io, "\\end{tabular}")
+    return print(io, "\\end{tabular}")
 end
 
 # ── Hochschild homology ─────────────────────────────────────────────────────────
@@ -1102,18 +1101,22 @@ euler(h::HochschildHomology) = evaluate(polynomial(h), -1)
 
 # Arithmetic works directly on the coefficient vectors: going through the Laurent
 # polynomial ring for every operation would be needless indirection.
-_terms(h::HochschildHomology) =
-    [(i, h[i]) for i in (-(length(h.L) ÷ 2)):(length(h.L) ÷ 2) if !is_zero(h[i])]
+function _terms(h::HochschildHomology)
+    return [(i, h[i]) for i in (-(length(h.L) ÷ 2)):(length(h.L) ÷ 2) if !is_zero(h[i])]
+end
 
-Base.:+(g::HochschildHomology, h::HochschildHomology) =
-    _from_terms(vcat(_terms(g), _terms(h)))
-Base.:-(g::HochschildHomology, h::HochschildHomology) =
-    _from_terms(vcat(_terms(g), [(i, -c) for (i, c) in _terms(h)]))
-Base.:*(g::HochschildHomology, h::HochschildHomology) = _from_terms([
-    (i + j, c * d) for (i, c) in _terms(g) for (j, d) in _terms(h)
-])
-Base.:^(h::HochschildHomology, k::Integer) =
-    k == 0 ? one(HochschildHomology) : reduce(*, fill(h, k))
+function Base.:+(g::HochschildHomology, h::HochschildHomology)
+    return _from_terms(vcat(_terms(g), _terms(h)))
+end
+function Base.:-(g::HochschildHomology, h::HochschildHomology)
+    return _from_terms(vcat(_terms(g), [(i, -c) for (i, c) in _terms(h)]))
+end
+function Base.:*(g::HochschildHomology, h::HochschildHomology)
+    return _from_terms([(i + j, c * d) for (i, c) in _terms(g) for (j, d) in _terms(h)])
+end
+function Base.:^(h::HochschildHomology, k::Integer)
+    return k == 0 ? one(HochschildHomology) : reduce(*, fill(h, k))
+end
 
 for operator in (:+, :-, :*)
     @eval Base.$operator(h::HochschildHomology, n::Integer) =
@@ -1151,7 +1154,7 @@ function symmetric_power(h::HochschildHomology, k::Integer)
     for partition in partitions(Int(k))
         counts = multiplicities(partition)
         factor = Dict(0 => BigInt(1))
-        for part in 1:maximum(keys(counts); init = 0)
+        for part in 1:maximum(keys(counts); init=0)
             factor = _convolve(factor, _symmetric_summand(terms, get(counts, part, 0)))
         end
         for (exponent, coefficient) in factor
@@ -1177,16 +1180,17 @@ function _symmetric_summand(terms::Vector{Tuple{Int,BigInt}}, k::Int)
     isempty(terms) && return Dict{Int,BigInt}()
     if length(terms) == 1
         degree, dimension = terms[1]
-        coefficient =
-            iseven(degree) ? falling_binomial(dimension + k - 1, k) :
+        coefficient = if iseven(degree)
+            falling_binomial(dimension + k - 1, k)
+        else
             falling_binomial(dimension, k)
+        end
         return is_zero(coefficient) ? Dict{Int,BigInt}() : Dict(k * degree => coefficient)
     end
     total = Dict{Int,BigInt}()
     for j in 0:k
         piece = _convolve(
-            _symmetric_summand(terms[1:1], j),
-            _symmetric_summand(terms[2:end], k - j),
+            _symmetric_summand(terms[1:1], j), _symmetric_summand(terms[2:end], k - j)
         )
         for (exponent, coefficient) in piece
             total[exponent] = get(total, exponent, BigInt(0)) + coefficient
@@ -1211,13 +1215,14 @@ sym(h::HochschildHomology, k::Integer) = symmetric_power(h, k)
 
 function Base.show(io::IO, ::MIME"text/plain", h::HochschildHomology)
     if iszero(h)
-        print(io, _render([["0"], ["0"]]; centered = false))
-        return
+        print(io, _render([["0"], ["0"]]; centered=false))
+        return nothing
     end
     n = dimension(h)
     table = [[string(i) for i in (-n):n], [string(h[i]) for i in (-n):n]]
-    print(io, _render(table; centered = false))
+    return print(io, _render(table; centered=false))
 end
 
-Base.show(io::IO, h::HochschildHomology) =
-    print(io, "Hochschild homology vector of dimension $(dimension(h))")
+function Base.show(io::IO, h::HochschildHomology)
+    return print(io, "Hochschild homology vector of dimension $(dimension(h))")
+end

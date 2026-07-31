@@ -81,10 +81,12 @@ function _classify_component(component, adjacent, bond)
     rank = length(component)
     rank == 1 && return Semisimple.TypeA{1}()
 
-    valence = Dict(node => count(other -> adjacent(node, other), component) for node in component)
+    valence = Dict(
+        node => count(other -> adjacent(node, other), component) for node in component
+    )
     strongest = maximum(
-        bond(node, other) for node in component for other in component if
-        adjacent(node, other)
+        bond(node, other) for node in component for
+        other in component if adjacent(node, other)
     )
 
     strongest == 3 && return Semisimple.TypeG2()
@@ -92,11 +94,13 @@ function _classify_component(component, adjacent, bond)
     if strongest == 2
         rank == 2 && return Semisimple.TypeB{2}()
         double = first(
-            (node, other) for node in component for other in component if
-            adjacent(node, other) && bond(node, other) == 2
+            (node, other) for node in component for
+            other in component if adjacent(node, other) && bond(node, other) == 2
         )
         # F4 is the only diagram whose double bond sits between two interior nodes
-        rank == 4 && valence[double[1]] == 2 && valence[double[2]] == 2 &&
+        rank == 4 &&
+            valence[double[1]] == 2 &&
+            valence[double[2]] == 2 &&
             return Semisimple.TypeF4()
         return Semisimple.TypeB{rank}()
     end
@@ -106,8 +110,8 @@ function _classify_component(component, adjacent, bond)
 
     node = component[branch]
     lengths = sort([
-        _branch_length(node, neighbour, component, adjacent) for neighbour in component if
-        adjacent(node, neighbour)
+        _branch_length(node, neighbour, component, adjacent) for
+        neighbour in component if adjacent(node, neighbour)
     ])
     lengths == [1, 1, rank - 3] && return Semisimple.TypeD{rank}()
     lengths == [1, 2, 2] && return Semisimple.TypeE{6}()
@@ -134,8 +138,7 @@ function _branch_length(node, neighbour, component, adjacent)
 end
 
 # ∏_i (1 + q + … + q^{d_i - 1}), the numerator of a Weyl group Poincaré polynomial
-_weyl_poincare(degrees) =
-    prod((sum(q^i for i in 0:(d - 1)) for d in degrees); init = one(Rq))
+_weyl_poincare(degrees) = prod((sum(q^i for i in 0:(d - 1)) for d in degrees); init=one(Rq))
 
 """
     partial_flag_variety(dynkin, vertices)
@@ -167,20 +170,21 @@ true
 """
 function partial_flag_variety(dynkin::AbstractString, vertices)
     dynkin_type = parse_dynkin(dynkin)
-    numerator =
-        _weyl_poincare(Semisimple.degrees_fundamental_invariants(dynkin_type))
-    denominator =
-        isempty(vertices) ? one(Rq) :
+    numerator = _weyl_poincare(Semisimple.degrees_fundamental_invariants(dynkin_type))
+    denominator = if isempty(vertices)
+        one(Rq)
+    else
         _weyl_poincare(
-            Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, vertices)),
+            Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, vertices))
         )
+    end
     poincare = divexact(numerator, denominator)
 
     M = zero_coefficients(degree(poincare) + 1)
     for i in 0:degree(poincare)
         M[i + 1, i + 1] = BigInt(coeff(poincare, i))
     end
-    return from_matrix(M; from_variety = true)
+    return from_matrix(M; from_variety=true)
 end
 
 """
@@ -244,8 +248,7 @@ function orthogonal_grassmannian(k::Integer, n::Integer)
     if iseven(n)
         k < half || throw(ArgumentError("need k < n/2 for even n"))
         # exceptional case: a submaximal parabolic is needed
-        vertices =
-            k - 1 == half ? collect(1:(half - 2)) : [i for i in 1:half if i != k]
+        vertices = k - 1 == half ? collect(1:(half - 2)) : [i for i in 1:half if i != k]
         return partial_flag_variety("D$half", vertices)
     end
     k <= half || throw(ArgumentError("need k ≤ (n-1)/2 for odd n"))

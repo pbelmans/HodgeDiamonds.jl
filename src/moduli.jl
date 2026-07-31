@@ -33,7 +33,7 @@ function hilbn(S::HodgeDiamond, n::Integer)
         a, b = geometric ? (min(p, 2n - q), min(q, 2n - p)) : (p, q)
         M[p + 1, q + 1] = top[a + 1, b + 1]
     end
-    return from_matrix(M; from_variety = geometric)
+    return from_matrix(M; from_variety=geometric)
 end
 
 """
@@ -75,7 +75,7 @@ function nestedhilbn(S::HodgeDiamond, n::Integer)
     for p in 0:(2n), q in 0:(2n)
         M[p + 1, q + 1] = top[min(p, 2n - q) + 1, min(q, 2n - p) + 1]
     end
-    return from_matrix(M; from_variety = true)
+    return from_matrix(M; from_variety=true)
 end
 
 """
@@ -103,11 +103,8 @@ function hilbtwo(X::HodgeDiamond)
     d = dimension(X)
     f = polynomial(X)
     doubled = _substitute_powers(f, 2, -1)
-    twisted = sum((polynomial(X(i)) for i in 1:(d - 1)); init = zero(R))
-    return from_polynomial(
-        divexact(f^2 + doubled, R(2)) + twisted;
-        from_variety = true,
-    )
+    twisted = sum((polynomial(X(i)) for i in 1:(d - 1)); init=zero(R))
+    return from_polynomial(divexact(f^2 + doubled, R(2)) + twisted; from_variety=true)
 end
 
 """
@@ -136,12 +133,9 @@ function hilbthree(X::HodgeDiamond)
         f^3 +
         3 * f * _substitute_powers(f, 2, -1) +
         2 * _substitute_powers(f, 3, 1) +
-        6 * sum((polynomial(squared(i)) for i in 1:(d - 1)); init = zero(R)) +
-        6 * sum(
-            (polynomial(X(i + j)) for i in 1:(d - 1) for j in i:(d - 1));
-            init = zero(R),
-        )
-    return from_polynomial(divexact(sixfold, R(6)); from_variety = true)
+        6 * sum((polynomial(squared(i)) for i in 1:(d - 1)); init=zero(R)) +
+        6 * sum((polynomial(X(i + j)) for i in 1:(d - 1) for j in i:(d - 1)); init=zero(R))
+    return from_polynomial(divexact(sixfold, R(6)); from_variety=true)
 end
 
 # f(sign * x^power, sign * y^power)
@@ -150,9 +144,7 @@ function _substitute_powers(f::HPoly, power::Int, sign::Int)
     for (coefficient, exponents) in zip(coefficients(f), exponent_vectors(f))
         scaled = sign == -1 ? (-1)^(exponents[1] + exponents[2]) : 1
         push_term!(
-            builder,
-            scaled * coefficient,
-            [power * exponents[1], power * exponents[2]],
+            builder, scaled * coefficient, [power * exponents[1], power * exponents[2]]
         )
     end
     return finish(builder)
@@ -211,12 +203,10 @@ function generalised_kummer(n::Integer)
     return from_polynomial(
         _to_integral_polynomial(
             multiply_truncated(
-                _kummer_product(n, N),
-                inverse_truncated(_kummer_product(1, N), N),
-                N,
+                _kummer_product(n, N), inverse_truncated(_kummer_product(1, N), N), N
             ),
         );
-        from_variety = true,
+        from_variety=true,
     )
 end
 
@@ -231,7 +221,9 @@ function _kummer_inner(size::Int, N::Int)
             for (part, count) in multiplicities(partition)
                 factor = zero_coefficients(RationalCoefficient, N + 1)
                 # ((1 - x^part)(1 - y^part))^(2 * count) / (part^count * count!)
-                scale = RationalCoefficient(1, BigInt(part)^count * factorial(BigInt(count)))
+                scale = RationalCoefficient(
+                    1, BigInt(part)^count * factorial(BigInt(count))
+                )
                 for a in 0:(2count), b in 0:(2count)
                     (a * part <= N && b * part <= N) || continue
                     factor[a * part + 1, b * part + 1] =
@@ -254,10 +246,7 @@ function _kummer_product(n::Int, N::Int)
         counts = multiplicities(partition)
         parts = sum(values(counts))
         piece = dense_monomial(
-            n - parts,
-            n - parts,
-            RationalCoefficient(gcd(collect(keys(counts)))^4),
-            N,
+            n - parts, n - parts, RationalCoefficient(gcd(collect(keys(counts)))^4), N
         )
         for count in values(counts)
             piece = multiply_truncated(piece, _kummer_inner(count, N), N)
@@ -309,7 +298,7 @@ ogrady6() = from_matrix(
         0 6 0 12 0 6 0
         1 0 1 0 1 0 1
     ];
-    from_variety = true,
+    from_variety=true,
 )
 
 """
@@ -342,7 +331,7 @@ ogrady10() = from_matrix(
         0 22 0 22 0 23 0 22 0 22 0
         1 0 1 0 1 0 1 0 1 0 1
     ];
-    from_variety = true,
+    from_variety=true,
 )
 
 # ── moduli of vector bundles on curves ───────────────────────────────────────────
@@ -397,9 +386,7 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
             numerator = multiply_truncated(numerator, factor, N)
             for exponent in (i, i + 1)
                 denominator = series_multiply(
-                    denominator,
-                    series_one_minus_power(exponent, N),
-                    N,
+                    denominator, series_one_minus_power(exponent, N), N
                 )
             end
         end
@@ -426,11 +413,12 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
         # del Baño's fourth factor is a power of the Lefschetz class
         twist = sum(
             ((g - 1) * composition[i] * composition[j] for j in 1:k for i in 1:(j - 1));
-            init = 0 // 1,
+            init=0//1,
         )
         for i in 1:(k - 1)
-            fractional = -sum(composition[1:i]) * d // r
-            twist += (composition[i] + composition[i + 1]) * (fractional - floor(fractional))
+            fractional = -sum(composition[1:i]) * d//r
+            twist +=
+                (composition[i] + composition[i + 1]) * (fractional - floor(fractional))
         end
         isone(Base.denominator(twist)) ||
             throw(ErrorException("non-integral Lefschetz twist $twist"))
@@ -447,14 +435,13 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
         # every denominator is a polynomial in L = xy, so collect and invert once
         denominator_series = series_one(M)
         for _ in 1:(k - 1)
-            denominator_series =
-                series_multiply(denominator_series, series_one_minus_power(1, M), M)
+            denominator_series = series_multiply(
+                denominator_series, series_one_minus_power(1, M), M
+            )
         end
         for part in composition
             denominator_series = series_multiply(
-                denominator_series,
-                part_denominator[part][1:(M + 1)],
-                M,
+                denominator_series, part_denominator[part][1:(M + 1)], M
             )
         end
         for j in 1:(k - 1)
@@ -465,9 +452,7 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
             )
         end
         piece = multiply_by_lefschetz_series(
-            piece,
-            series_inverse(denominator_series, M),
-            M,
+            piece, series_inverse(denominator_series, M), M
         )
 
         parity = (-1)^(k - 1)
@@ -478,7 +463,7 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
         end
     end
 
-    return from_polynomial(dense_to_polynomial(total); from_variety = true)
+    return from_polynomial(dense_to_polynomial(total); from_variety=true)
 end
 
 """
@@ -514,27 +499,28 @@ function seshadris_desingularisation(genus::Integer)
     N = 3g - 3
     T = RationalCoefficient
 
-    binomials(exponent, alternating) = begin
+    function binomials(exponent, alternating)
         factor = zero_coefficients(T, N + 1)
         for s in 0:min(exponent, N), u in 0:min(exponent, N)
-            factor[s + 1, u + 1] =
-                T((alternating ? (-1)^(s + u) : 1) *
-                  binomial(BigInt(exponent), s) *
-                  binomial(BigInt(exponent), u))
+            factor[s + 1, u + 1] = T(
+                (alternating ? (-1)^(s + u) : 1) *
+                binomial(BigInt(exponent), s) *
+                binomial(BigInt(exponent), u),
+            )
         end
-        factor
+        return factor
     end
     A = binomials(g, false)                                   # ((1 + x)(1 + y))^g
     B = binomials(g, true)                                    # ((1 - x)(1 - y))^g
 
     # (1 + x^2 y)^g and (1 + x y^2)^g
-    skewed(swap) = begin
+    function skewed(swap)
         factor = zero_coefficients(T, N + 1)
         for s in 0:g
             a, b = swap ? (s, 2s) : (2s, s)
             (a <= N && b <= N) && (factor[a + 1, b + 1] = T(binomial(BigInt(g), s)))
         end
-        factor
+        return factor
     end
 
     one_minus(e) = series_one_minus_power(T, e, N)
@@ -566,31 +552,21 @@ function seshadris_desingularisation(genus::Integer)
     shifted_A[1, 1] -= T(BigInt(2)^(2g))
     ratio = series_multiply(one_minus(g - 1), inverse_of(one_minus(1)), N)
     part_three = multiply_by_lefschetz_series(
-        shifted_A .// 2,
-        series_multiply(ratio, ratio, N),
-        N,
+        shifted_A .// 2, series_multiply(ratio, ratio, N), N
     )
 
     shifted_B = B .// 2
     shifted_B[1, 1] -= T(BigInt(2)^(2g - 1))
     part_four = multiply_by_lefschetz_series(
-        shifted_B,
-        series_multiply(one_minus(2g - 2), inverse_of(one_minus(2)), N),
-        N,
+        shifted_B, series_multiply(one_minus(2g - 2), inverse_of(one_minus(2)), N), N
     )
 
     first_five = series_multiply(
         series_multiply(
-            series_multiply(one_minus(g), one_minus(g - 1), N),
-            one_minus(g - 2),
-            N,
+            series_multiply(one_minus(g), one_minus(g - 1), N), one_minus(g - 2), N
         ),
         inverse_of(
-            series_multiply(
-                series_multiply(one_minus(1), one_minus(2), N),
-                one_minus(3),
-                N,
-            ),
+            series_multiply(series_multiply(one_minus(1), one_minus(2), N), one_minus(3), N)
         ),
         N,
     )
@@ -602,15 +578,13 @@ function seshadris_desingularisation(genus::Integer)
     part_five = multiply_by_lefschetz_series(
         dense_monomial(0, 0, T(BigInt(2)^(2g)), N),
         series_multiply(
-            first_five + _shift_series(second_five, g - 2, N),
-            series_one(T, N),
-            N,
+            first_five + _shift_series(second_five, g - 2, N), series_one(T, N), N
         ),
         N,
     )
 
     return from_polynomial(
-        _to_integral_polynomial(part_one - part_two + part_three + part_four + part_five),
+        _to_integral_polynomial(part_one - part_two + part_three + part_four + part_five)
     )
 end
 
@@ -620,10 +594,15 @@ function _series_one_plus_lefschetz(::Type{T}, N::Int) where {T<:Number}
     return series
 end
 
-_shift_series(series::Vector{T}, shift::Int, N::Int) where {T<:Number} = [
-    (m - shift >= 0 && m - shift + 1 <= length(series)) ? series[m - shift + 1] : zero(T)
-    for m in 0:N
-]
+function _shift_series(series::Vector{T}, shift::Int, N::Int) where {T<:Number}
+    return [
+        if (m - shift >= 0 && m - shift + 1 <= length(series))
+            series[m - shift + 1]
+        else
+            zero(T)
+        end for m in 0:N
+    ]
+end
 
 """
     moduli_parabolic_vector_bundles_rank_two(genus, weights)
@@ -655,25 +634,31 @@ function moduli_parabolic_vector_bundles_rank_two(genus::Integer, weights)
     total = sum(alpha)
     N = length(alpha)
 
-    count_in_band(j) = count(
-        subset ->
-            iseven(length(subset) - j) &&
-                j - 1 <
-                (length(subset) + total - 2 * sum(alpha[i] for i in subset; init = 0)) <
-                j + 1,
-        powerset(1:N),
-    )
+    function count_in_band(j)
+        return count(
+            subset ->
+                iseven(length(subset) - j) &&
+                    j - 1 <
+                    (length(subset) + total - 2 * sum(alpha[i] for i in subset; init=0)) <
+                    j + 1,
+            powerset(1:N),
+        )
+    end
     complement(j) = binomial(BigInt(N), j) - count_in_band(j)
-    multiplicity(j) = sum(((i + 2) ÷ 2) * complement(j - i) for i in 0:j; init = BigInt(0))
+    multiplicity(j) = sum(((i + 2) ÷ 2) * complement(j - i) for i in 0:j; init=BigInt(0))
 
-    base =
-        genus == 0 ? zero(HodgeDiamond) :
-        genus == 1 ? curve(1) : moduli_vector_bundles(2, 1, genus)
+    base = if genus == 0
+        zero(HodgeDiamond)
+    elseif genus == 1
+        curve(1)
+    else
+        moduli_vector_bundles(2, 1, genus)
+    end
 
     result =
         base * Pn(1)^N + sum(
             (multiplicity(j) * jacobian(genus)(genus + j) for j in 0:(N - 3));
-            init = zero(HodgeDiamond),
+            init=zero(HodgeDiamond),
         )
     arises_from_variety(result) ||
         throw(ErrorException("the weights do not give a smooth projective variety"))
@@ -706,13 +691,12 @@ function quot_scheme_curve(genus::Integer, quotient_length::Integer, rank::Integ
             begin
                 twist = sum((i - 1) * exponents[i] for i in eachindex(exponents))
                 product = prod(
-                    (symmetric_power(part, genus) for part in exponents);
-                    init = point(),
+                    (symmetric_power(part, genus) for part in exponents); init=point()
                 )
                 product(twist)
             end for exponents in multiexponents(Int(rank), Int(quotient_length))
         );
-        init = zero(HodgeDiamond),
+        init=zero(HodgeDiamond),
     )
 end
 
@@ -728,7 +712,7 @@ const GENERAL_LINEAR_CACHE = Dict{Int,elem_type(Kv)}()
 "Cardinality of the general linear group ``\\mathrm{GL}_m(\\mathbb{F}_v)``."
 _general_linear(m::Int) =
     get!(GENERAL_LINEAR_CACHE, m) do
-        prod((v^m - v^k for k in 0:(m - 1)); init = one(Kv))
+        prod((v^m - v^k for k in 0:(m - 1)); init=one(Kv))
     end
 
 """
@@ -737,7 +721,7 @@ _general_linear(m::Int) =
 Turn a linear functional on dimension vectors into a slope-stability function, for use as
 the `mu` keyword of [`quiver_moduli`](@ref).
 """
-slope(theta) = e -> sum(theta[i] * e[i] for i in eachindex(e)) // sum(e)
+slope(theta) = e -> sum(theta[i] * e[i] for i in eachindex(e))//sum(e)
 
 """
     quiver_moduli(Q, d; mu = nothing)
@@ -796,7 +780,7 @@ julia> quiver_moduli(Q, (1, 1, 1); mu = slope((1, 0, 0))) == Pn(2)
 true
 ```
 """
-function quiver_moduli(Q, d; mu = nothing)
+function quiver_moduli(Q, d; mu=nothing)
     adjacency = Matrix{Int}(Q)
     n = length(d)
     size(adjacency) == (n, n) ||
@@ -835,25 +819,22 @@ function quiver_moduli(Q, d; mu = nothing)
     for i in 1:size_transfer, j in i:size_transfer
         difference = indexing[j] - indexing[i]
         all(>=(0), difference) || continue
-        power = -sum(
-            difference[a] * euler_form[a, b] * indexing[i][b] for a in 1:n, b in 1:n
-        )
-        cardinality = v^sum(
-            difference[a] * difference[b] * adjacency[a, b] for a in 1:n, b in 1:n
-        )
-        group = prod((_general_linear(part) for part in difference); init = one(Kv))
-        transfer[i, j] = v^power * cardinality // group
+        power =
+            -sum(difference[a] * euler_form[a, b] * indexing[i][b] for a in 1:n, b in 1:n)
+        cardinality =
+            v^sum(difference[a] * difference[b] * adjacency[a, b] for a in 1:n, b in 1:n)
+        group = prod((_general_linear(part) for part in difference); init=one(Kv))
+        transfer[i, j] = v^power * cardinality//group
     end
 
     # back substitution is faster than inverting
     solution = [zero(Kv) for _ in 1:size_transfer]
-    solution[size_transfer] = one(Kv) // transfer[size_transfer, size_transfer]
+    solution[size_transfer] = one(Kv)//transfer[size_transfer, size_transfer]
     for i in (size_transfer - 1):-1:1
         accumulated = sum(
-            (transfer[i, j] * solution[j] for j in (i + 1):size_transfer);
-            init = zero(Kv),
+            (transfer[i, j] * solution[j] for j in (i + 1):size_transfer); init=zero(Kv)
         )
-        solution[i] = -accumulated // transfer[i, i]
+        solution[i] = -accumulated//transfer[i, i]
     end
 
     result = solution[1] * (1 - v)
@@ -953,7 +934,7 @@ function brauer_severi(genus::Integer, degree::Integer, ramification)
         throw(ArgumentError("ramification data must be positive integers"))
 
     return Pn(degree - 1) * (curve(genus) - length(data) * point()) +
-           sum((_brauer_severi_fibre(datum) for datum in data); init = zero(HodgeDiamond))
+           sum((_brauer_severi_fibre(datum) for datum in data); init=zero(HodgeDiamond))
 end
 
 "Partial sum ``s_{i,j}`` of the ramification datum, equation (2.15) in [Baumann]."
@@ -995,7 +976,7 @@ function _brauer_severi_auxiliary(datum::Tuple)
             result +=
                 _brauer_severi_auxiliary(cut) * sum(
                     (point()(twist) for twist in 1:(total - sum(cut) - 1));
-                    init = zero(HodgeDiamond),
+                    init=zero(HodgeDiamond),
                 )
         end
         result
@@ -1014,11 +995,10 @@ function _brauer_severi_intersection(indices, datum::Tuple)
     gaps = vcat([I[j + 1] - I[j] for j in 1:(k - 1)], [e - I[end] + I[1]])
     return prod(
         (
-            _brauer_severi_auxiliary(
-                _brauer_severi_cut(datum, I[mod1(j + 1, k)], gaps[j]),
-            ) for j in 1:k
+            _brauer_severi_auxiliary(_brauer_severi_cut(datum, I[mod1(j + 1, k)], gaps[j]))
+            for j in 1:k
         );
-        init = point(),
+        init=point(),
     )
 end
 
@@ -1033,6 +1013,6 @@ function _brauer_severi_fibre(datum::Tuple)
             (-1)^(length(I) + 1) * _brauer_severi_intersection(I, datum) for
             I in powerset(1:e) if !isempty(I)
         );
-        init = zero(HodgeDiamond),
+        init=zero(HodgeDiamond),
     )
 end

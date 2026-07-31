@@ -11,9 +11,9 @@ const HD = HodgeDiamonds
             HodgeDiamonds,
             :DocTestSetup,
             :(using AbstractAlgebra, HodgeDiamonds);
-            recursive = true,
+            recursive=true,
         )
-        doctest(HodgeDiamonds; manual = false)
+        doctest(HodgeDiamonds; manual=false)
     end
 
     @testset "construction" begin
@@ -23,8 +23,8 @@ const HD = HodgeDiamonds
         @test from_polynomial(1 + x^2 + 20x * y + y^2 + x^2 * y^2) == K3()
         @test Matrix(K3()) == BigInt[1 0 1; 0 20 0; 1 0 1]
         @test_throws ArgumentError from_matrix([1 2 3; 4 5 6])
-        @test_throws AssertionError from_matrix([1 2; 0 1]; from_variety = true)
-        @test_throws AssertionError from_polynomial(1 + x; from_variety = true)
+        @test_throws AssertionError from_matrix([1 2; 0 1]; from_variety=true)
+        @test_throws AssertionError from_polynomial(1 + x; from_variety=true)
 
         # trailing zero rows and columns get dropped
         @test Matrix(from_matrix([1 0 0; 0 0 0; 0 0 0])) == BigInt[1;;]
@@ -32,8 +32,7 @@ const HD = HodgeDiamonds
     end
 
     @testset "ring axioms" begin
-        for (X, Y, Z) in
-            [(K3(), curve(3), Pn(2)), (point(), lefschetz(), abelian(2))]
+        for (X, Y, Z) in [(K3(), curve(3), Pn(2)), (point(), lefschetz(), abelian(2))]
             @test X + Y == Y + X
             @test X * Y == Y * X
             @test (X + Y) + Z == X + (Y + Z)
@@ -75,7 +74,7 @@ const HD = HodgeDiamonds
         @test all(level(Pn(n)) == 0 for n in 0:9)
         @test all(level(hypersurface(n + 2, n)) == n for n in 0:9)
         @test row(hypersurface(3, 4), 4) == middle(hypersurface(3, 4))
-        @test row(moduli_vector_bundles(3, 1, 9), 3; truncate = true) == BigInt[9, 9]
+        @test row(moduli_vector_bundles(3, 1, 9), 3; truncate=true) == BigInt[9, 9]
 
         # motivic pieces may have negative entries and need not be Serre symmetric
         @test middle(hypersurface(3, 4) - lefschetz()^2) == BigInt[0, 1, 20, 1, 0]
@@ -92,17 +91,16 @@ const HD = HodgeDiamonds
         @test plain(Pn(1)) == "      1\n  0       0\n      1"
         @test plain(zero(HodgeDiamond)) == "  0"
         @test plain(K3()) ==
-              "          1\n      0        0\n  1       20       1\n      0        0\n          1"
+            "          1\n      0        0\n  1       20       1\n      0        0\n          1"
         @test repr(K3()) == "Hodge diamond of size 3 and dimension 2"
 
-        hidden = sprint(pprint, Pn(2) * curve(3); context = :x => 1)
-        @test sprint(io -> pprint(io, Pn(2) * curve(3); hide_zeroes = true)) ==
-              "      1\n  3       3\n      2\n  3       3\n      2\n  3       3\n      1"
-        @test sprint(io -> pprint(io, Pn(2) * curve(3); quarter = true)) ==
-              "              1\n          3\n      0       2\n  0       3"
-        @test sprint(
-            io -> pprint(io, Pn(2) * curve(3); hide_zeroes = true, quarter = true),
-        ) == "      1\n  3\n      2\n  3"
+        hidden = sprint(pprint, Pn(2) * curve(3); context=:x => 1)
+        @test sprint(io -> pprint(io, Pn(2) * curve(3); hide_zeroes=true)) ==
+            "      1\n  3       3\n      2\n  3       3\n      2\n  3       3\n      1"
+        @test sprint(io -> pprint(io, Pn(2) * curve(3); quarter=true)) ==
+            "              1\n          3\n      0       2\n  0       3"
+        @test sprint(io -> pprint(io, Pn(2) * curve(3); hide_zeroes=true, quarter=true)) ==
+            "      1\n  3\n      2\n  3"
 
         # the global defaults
         HD.HIDE_ZEROES[] = true
@@ -127,7 +125,8 @@ const HD = HodgeDiamonds
         @test dimension(3 * h) == 2
         @test h^0 == one(HochschildHomology)
         @test collect(sym(h, 2)) == BigInt[1, 0, 23, 0, 276, 0, 23, 0, 1]
-        @test repr(MIME("text/plain"), h) == "  -2   -1   0    1   2\n  1    0    22   0   1"
+        @test repr(MIME("text/plain"), h) ==
+            "  -2   -1   0    1   2\n  1    0    22   0   1"
         @test repr(h) == "Hochschild homology vector of dimension 2"
         @test_throws AssertionError from_list([1, 2])
         @test_throws AssertionError from_list([1, 0, 2])
@@ -151,10 +150,8 @@ const HD = HodgeDiamonds
     @testset "complete intersections" begin
         @test complete_intersection(1, 2) == Pn(2)
         @test complete_intersection([1, 1], 5) == Pn(5)
-        @test [euler(complete_intersection(3, n)) for n in 0:9] ==
-              BigInt[3, 0, 9, -6, 27, -36, 93, -162, 351, -672]
-        @test [euler(complete_intersection([2, 2], n)) for n in 0:9] ==
-              BigInt[4, 0, 8, 0, 12, 0, 16, 0, 20, 0]
+        @test [euler(complete_intersection(3, n)) for n in 0:9] == BigInt[3, 0, 9, -6, 27, -36, 93, -162, 351, -672]
+        @test [euler(complete_intersection([2, 2], n)) for n in 0:9] == BigInt[4, 0, 8, 0, 12, 0, 16, 0, 20, 0]
         @test weighted_hypersurface(3, 2) == weighted_hypersurface(3, [1, 1, 1]) == curve(1)
         @test weighted_hypersurface(4, [1, 1, 2]) == curve(1)
         @test weighted_hypersurface(6, [1, 2, 3]) == curve(1)
@@ -176,8 +173,7 @@ const HD = HodgeDiamonds
         @test hilbn(K3(), 1) == K3() == K3n(1)
         @test hilbtwo(K3()) == hilbn(K3(), 2)
         @test hilbthree(K3()) == hilbn(K3(), 3)
-        @test [euler(hilbn(K3(), n)) for n in 0:9] ==
-              BigInt[1, 24, 324, 3200, 25650, 176256, 1073720, 5930496, 30178575, 143184000]
+        @test [euler(hilbn(K3(), n)) for n in 0:9] == BigInt[1, 24, 324, 3200, 25650, 176256, 1073720, 5930496, 30178575, 143184000]
         @test all(betti(hilbn(K3(), n))[3] == 23 for n in 2:9)
         @test all(holomorphic_euler(K3n(n)) == n + 1 for n in 0:4)
         @test all(is_serre_symmetric(hilbn(K3(), n)) for n in 1:5)
@@ -208,10 +204,10 @@ const HD = HodgeDiamonds
         end
         @test seshadris_desingularisation(2) == Pn(3)
         @test euler(seshadris_desingularisation(3)) == 112
-        @test moduli_parabolic_vector_bundles_rank_two(0, fill(1 // 2, 5)) ==
-              fano_variety_intersection_quadrics_even(2, 0)
-        @test moduli_parabolic_vector_bundles_rank_two(0, fill(1 // 2, 9)) ==
-              fano_variety_intersection_quadrics_even(4, 2)
+        @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 5)) ==
+            fano_variety_intersection_quadrics_even(2, 0)
+        @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 9)) ==
+            fano_variety_intersection_quadrics_even(4, 2)
         @test all(quot_scheme_curve(3, n, 1) == symmetric_power(n, 3) for n in 0:4)
         @test dimension(quot_scheme_curve(2, 3, 2)) == 6
     end
@@ -235,9 +231,10 @@ const HD = HodgeDiamonds
         # the Grassmannian Poincaré polynomial is the Gaussian binomial
         for (k, n) in [(2, 5), (3, 7), (2, 6), (4, 9)]
             gaussian = HD.q_binomial(n, k)
-            @test Matrix(grassmannian(k, n)) ==
-                  [i == j ? BigInt(coeff(gaussian, i - 1)) : BigInt(0) for
-                   i in 1:(degree(gaussian) + 1), j in 1:(degree(gaussian) + 1)]
+            @test Matrix(grassmannian(k, n)) == [
+                i == j ? BigInt(coeff(gaussian, i - 1)) : BigInt(0) for
+                i in 1:(degree(gaussian) + 1), j in 1:(degree(gaussian) + 1)
+            ]
         end
     end
 
@@ -254,32 +251,32 @@ const HD = HodgeDiamonds
         @test fano_variety_lines_cubic(3) == surface(10, 5, 25)
         @test fano_variety_lines_cubic(4) == hilbn(K3(), 2)
         @test fano_variety_intersection_quadrics_odd(2, 0) ==
-              complete_intersection([2, 2], 3)
+            complete_intersection([2, 2], 3)
         @test fano_variety_intersection_quadrics_odd(5, 0) ==
-              complete_intersection([2, 2], 9)
+            complete_intersection([2, 2], 9)
         @test fano_variety_intersection_quadrics_odd(11, 9) ==
-              moduli_vector_bundles(2, 1, 11)
+            moduli_vector_bundles(2, 1, 11)
         @test fano_variety_intersection_quadrics_odd(12, 11) == jacobian(12)
         @test fano_variety_intersection_quadrics_even(2, 0) ==
-              complete_intersection([2, 2], 2)
+            complete_intersection([2, 2], 2)
         @test fano_variety_intersection_quadrics_even(5, 0) ==
-              complete_intersection([2, 2], 8)
+            complete_intersection([2, 2], 8)
         @test fano_variety_intersection_quadrics_even(4, 3) == 4^4 * point()
     end
 
     @testset "quiver moduli" begin
         kronecker(d) = [0 d; 0 0]
-        @test quiver_moduli(kronecker(2), (1, 1); mu = slope((1, -1))) == Pn(1)
+        @test quiver_moduli(kronecker(2), (1, 1); mu=slope((1, -1))) == Pn(1)
         @test quiver_moduli(kronecker(2), (1, 1)) == Pn(1)
         @test all(quiver_moduli(kronecker(d), (1, 1)) == Pn(d - 1) for d in 3:9)
-        @test quiver_moduli(kronecker(4), (1, 2); mu = slope((2, 1))) == grassmannian(2, 4)
+        @test quiver_moduli(kronecker(4), (1, 2); mu=slope((2, 1))) == grassmannian(2, 4)
         @test quiver_moduli(kronecker(7), (1, 3)) == grassmannian(3, 7)
         @test quiver_moduli(kronecker(7), (1, 3)) ==
-              quiver_moduli(kronecker(7), (1, 3); mu = slope((1, -1)))
+            quiver_moduli(kronecker(7), (1, 3); mu=slope((1, -1)))
 
         wall = [0 1 1; 0 0 2; 0 0 0]
         @test quiver_moduli(wall, (1, 1, 1)) == blowup(Pn(2), point())
-        @test quiver_moduli(wall, (1, 1, 1); mu = slope((1, 0, 0))) == Pn(2)
+        @test quiver_moduli(wall, (1, 1, 1); mu=slope((1, 0, 0))) == Pn(2)
 
         flags(n, s) = [i == j - 1 ? (i == 1 ? n : 1) : 0 for i in 1:(s + 1), j in 1:(s + 1)]
         @test quiver_moduli(flags(4, 1), (1, 1)) == Pn(3)
@@ -293,8 +290,7 @@ const HD = HodgeDiamonds
     @testset "Brauer--Severi schemes" begin
         @test brauer_severi(5, 3, []) == curve(5) * Pn(2)
         @test brauer_severi(0, 2, [(1, 1)]) == blowup(Pn(2), 2 * point())
-        @test Matrix(brauer_severi(1, 2, fill((1, 1), 3))) ==
-              BigInt[1 1 0; 1 5 1; 0 1 1]
+        @test Matrix(brauer_severi(1, 2, fill((1, 1), 3))) == BigInt[1 1 0; 1 5 1; 0 1 1]
         @test_throws ArgumentError brauer_severi(0, 3, [(1, 1)])
         @test_throws ArgumentError brauer_severi(0, 2, [(0, 2)])
 
@@ -325,8 +321,7 @@ const HD = HodgeDiamonds
         @test [fibre[j, j] for j in 0:9] == BigInt[1, 4, 9, 15, 20, 22, 20, 15, 9, 4]
         for n in 2:5
             totally = HD._brauer_severi_fibre(Tuple(fill(1, n)))
-            @test [totally[j, j] for j in 0:n] ==
-                  BigInt[binomial(n, j) - (j == n ? 1 : 0) for j in 0:n]
+            @test [totally[j, j] for j in 0:n] == BigInt[binomial(n, j) - (j == n ? 1 : 0) for j in 0:n]
         end
     end
 
@@ -354,37 +349,39 @@ const HD = HodgeDiamonds
         inverse = HD.series_inverse(HD.series_one_minus_power(1, 5), 5)
         @test inverse == BigInt[1, 1, 1, 1, 1, 1]
         @test HD.series_multiply(HD.series_one_minus_power(1, 5), inverse, 5) ==
-              BigInt[1, 0, 0, 0, 0, 0]
+            BigInt[1, 0, 0, 0, 0, 0]
         square = HD.multiply_truncated(HD.dense_one(3), HD.dense_one(3), 3)
         @test square == HD.dense_one(3)
 
         # Weyl group degrees of induced sub-diagrams, checked against Semisimple
-        import Semisimple
+        using Semisimple: Semisimple
         degrees(type) = Semisimple.degrees_fundamental_invariants(type)
         @test degrees(HD.levi_type(HD.parse_dynkin("A5"), [2, 3, 4, 5])) ==
-              degrees(Semisimple.TypeA{4}())
-        @test degrees(HD.levi_type(HD.parse_dynkin("A5"), [1, 2, 4, 5])) ==
-              degrees(Semisimple.ProductDynkinType(Semisimple.TypeA{2}(), Semisimple.TypeA{2}()))
+            degrees(Semisimple.TypeA{4}())
+        @test degrees(HD.levi_type(HD.parse_dynkin("A5"), [1, 2, 4, 5])) == degrees(
+            Semisimple.ProductDynkinType(Semisimple.TypeA{2}(), Semisimple.TypeA{2}())
+        )
         @test degrees(HD.levi_type(HD.parse_dynkin("E8"), [1, 3, 4, 5, 6, 7, 8])) ==
-              degrees(Semisimple.TypeA{7}())
+            degrees(Semisimple.TypeA{7}())
         @test degrees(HD.levi_type(HD.parse_dynkin("E8"), [2, 3, 4, 5, 6, 7, 8])) ==
-              degrees(Semisimple.TypeD{7}())
+            degrees(Semisimple.TypeD{7}())
         @test degrees(HD.levi_type(HD.parse_dynkin("E8"), [1, 2, 3, 4, 5, 6, 7])) ==
-              degrees(Semisimple.TypeE{7}())
+            degrees(Semisimple.TypeE{7}())
         @test degrees(HD.levi_type(HD.parse_dynkin("F4"), [1, 2, 3, 4])) ==
-              degrees(Semisimple.TypeF4())
+            degrees(Semisimple.TypeF4())
         @test degrees(HD.levi_type(HD.parse_dynkin("F4"), [2, 3])) ==
-              degrees(Semisimple.TypeB{2}())
+            degrees(Semisimple.TypeB{2}())
         @test degrees(HD.levi_type(HD.parse_dynkin("F4"), [1, 2])) ==
-              degrees(Semisimple.TypeA{2}())
+            degrees(Semisimple.TypeA{2}())
         @test degrees(HD.levi_type(HD.parse_dynkin("D6"), [1, 2, 3, 4, 5, 6])) ==
-              degrees(Semisimple.TypeD{6}())
-        @test degrees(HD.levi_type(HD.parse_dynkin("D6"), [5, 6])) ==
-              degrees(Semisimple.ProductDynkinType(Semisimple.TypeA{1}(), Semisimple.TypeA{1}()))
+            degrees(Semisimple.TypeD{6}())
+        @test degrees(HD.levi_type(HD.parse_dynkin("D6"), [5, 6])) == degrees(
+            Semisimple.ProductDynkinType(Semisimple.TypeA{1}(), Semisimple.TypeA{1}())
+        )
         @test degrees(HD.levi_type(HD.parse_dynkin("G2"), [1, 2])) ==
-              degrees(Semisimple.TypeG2())
+            degrees(Semisimple.TypeG2())
         @test degrees(HD.levi_type(HD.parse_dynkin("B4"), [2, 3, 4])) ==
-              degrees(Semisimple.TypeB{3}())
+            degrees(Semisimple.TypeB{3}())
         @test_throws ArgumentError HD.parse_dynkin("H4")
         @test_throws ArgumentError HD.levi_type(HD.parse_dynkin("A3"), Int[])
     end

@@ -12,7 +12,7 @@ module HodgeDiamonds
 using AbstractAlgebra
 using Combinatorics: multiexponents, partitions, powerset
 import LinearAlgebra: cross, ×
-import Semisimple
+using Semisimple: Semisimple
 
 #: polynomial ring used for the Hodge--Poincaré polynomial
 const R, (x, y) = polynomial_ring(ZZ, [:x, :y])
