@@ -235,7 +235,7 @@ end
 
 # ── q-binomials ─────────────────────────────────────────────────────────────────
 
-const Q_BINOMIAL_CACHE = Dict{Tuple{Int,Int},elem_type(Rq)}()
+const Q_BINOMIAL_CACHE = Dict{Int,Vector{elem_type(Rq)}}()
 
 """
     q_binomial(n, k)
@@ -248,18 +248,19 @@ AbstractAlgebra has no `q_binomial`, and the recurrence keeps everything in
 """
 function q_binomial(n::Integer, k::Integer)
   (k < 0 || k > n || n < 0) && return zero(Rq)
-  get!(Q_BINOMIAL_CACHE, (Int(n), Int(k))) do
-    previous = [one(Rq)]
-    for m in 1:n
-      current = [zero(Rq) for _ in 0:m]
-      for j in 0:m
-        left = j >= 1 ? previous[j] : zero(Rq)
-        right = j <= m - 1 ? previous[j + 1] : zero(Rq)
-        current[j + 1] = left + q^j * right
-      end
-      previous = current
-    end
-    previous[k + 1]
+  return _q_binomial_row(Int(n))[k + 1]
+end
+
+# Row `n` of the q-Pascal triangle. The recurrence has to walk up through every row below,
+# so all of them are cached on the way: a caller asking for many rows pays for the deepest.
+function _q_binomial_row(n::Int)
+  return get!(Q_BINOMIAL_CACHE, n) do
+    is_zero(n) && return [one(Rq)]
+    previous = _q_binomial_row(n - 1)
+    return [
+      (j >= 1 ? previous[j] : zero(Rq)) + q^j * (j <= n - 1 ? previous[j + 1] : zero(Rq))
+      for j in 0:n
+    ]
   end
 end
 
