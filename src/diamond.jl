@@ -102,9 +102,9 @@ x^2*y^2 + x^2 + 20*x*y + y^2 + 1
 """
 AbstractAlgebra.polynomial(X::HodgeDiamond) = X.f
 
-# Size of the underlying square matrix, minus one, with trailing zero rows and columns
-# dropped.
-function _size(X::HodgeDiamond)
+# Largest exponent of x or of y occurring, so that the Hodge numbers fit in a square
+# matrix of size `_top_degree(X) + 1` with no trailing zero row or column.
+function _top_degree(X::HodgeDiamond)
   is_zero(X.f) && return 0
   largest = 0
   for exponents in exponent_vectors(X.f)
@@ -130,7 +130,7 @@ julia> Matrix(K3())
 ```
 """
 function Base.Matrix(X::HodgeDiamond)
-  M = zero_coefficients(_size(X) + 1)
+  M = zero_coefficients(_top_degree(X) + 1)
   for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
     M[exponents[1] + 1, exponents[2] + 1] = BigInt(coefficient)
   end
@@ -354,7 +354,7 @@ false
 ```
 """
 function is_serre_symmetric(X::HodgeDiamond)
-  d = _size(X)
+  d = _top_degree(X)
   M = Matrix(X)
   return all(M[p + 1, q + 1] == M[d - p + 1, d - q + 1] for p in 0:d, q in 0:d)
 end
@@ -403,7 +403,7 @@ julia> dimension(zero(HodgeDiamond))
 """
 function dimension(X::HodgeDiamond)
   is_zero(X.f) && return -1
-  return _size(X) - lefschetz_power(X)
+  return _top_degree(X) - lefschetz_power(X)
 end
 
 """
@@ -481,7 +481,7 @@ julia> [betti(hilbn(K3(), n))[3] for n in 2:9]
 ```
 """
 function betti(X::HodgeDiamond)
-  d = _size(X)
+  d = _top_degree(X)
   M = Matrix(X)
   return [
     sum((M[j + 1, i - j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
@@ -517,7 +517,7 @@ julia> middle(K3())
 ```
 """
 function middle(X::HodgeDiamond)
-  d = _size(X)
+  d = _top_degree(X)
   M = Matrix(X)
   return [M[i + 1, d - i + 1] for i in 0:d]
 end
@@ -582,7 +582,7 @@ julia> signature(K3())
 function signature(X::HodgeDiamond)
   arises_from_variety(X) ||
     throw(ArgumentError("the signature needs a compact Kähler manifold"))
-  d = _size(X)
+  d = _top_degree(X)
   return sum((-1)^p * X[p, q] for p in 0:d, q in 0:d)
 end
 
@@ -650,7 +650,7 @@ julia> holomorphic_euler(hopf())
 ```
 """
 holomorphic_euler(X::HodgeDiamond) =
-  sum(((-1)^q * X[0, q] for q in 0:_size(X)); init=BigInt(0))
+  sum(((-1)^q * X[0, q] for q in 0:_top_degree(X)); init=BigInt(0))
 
 """
     hirzebruch(X)
@@ -701,7 +701,7 @@ julia> hochschild(K3())
 ```
 """
 function hochschild(X::HodgeDiamond)
-  d = _size(X)
+  d = _top_degree(X)
   M = Matrix(X)
   return from_list([
     sum((M[d - i + j + 1, j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
@@ -826,7 +826,7 @@ function _render(table::Vector{Vector{String}}; centered::Bool=true)
 end
 
 function _grid(X::HodgeDiamond; hide_zeroes::Bool, quarter::Bool)
-  d = _size(X)
+  d = _top_degree(X)
   M = Matrix(X)
   table = Vector{Vector{String}}()
   if is_zero(X)
@@ -930,7 +930,7 @@ pprint(X::HodgeDiamond; kwargs...) = pprint(stdout, X; kwargs...)
 Base.show(io::IO, ::MIME"text/plain", X::HodgeDiamond) = pprint(io, X)
 
 function Base.show(io::IO, X::HodgeDiamond)
-  return print(io, "Hodge diamond of size $(_size(X) + 1) and dimension $(dimension(X))")
+  return print(io, "Hodge diamond of size $(_top_degree(X) + 1) and dimension $(dimension(X))")
 end
 
 """
