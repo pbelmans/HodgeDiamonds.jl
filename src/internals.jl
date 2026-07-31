@@ -82,6 +82,11 @@ end
 zero_coefficients(::Type{T}, size::Int) where {T<:Number} = zeros(T, size, size)
 zero_coefficients(size::Int) = zero_coefficients(BigInt, size)
 
+# `zeros` would put one shared `BigInt` in every slot, which the in-place kernels below
+# would then corrupt, so give each entry its own.
+zero_coefficients(::Type{BigInt}, size::Int) =
+  BigInt[BigInt(0) for _ in 1:size, _ in 1:size]
+
 function dense_monomial(i::Int, j::Int, coefficient::T, N::Int) where {T<:Number}
   dense = zero_coefficients(T, N + 1)
   (i <= N && j <= N) && (dense[i + 1, j + 1] = coefficient)
@@ -227,6 +232,46 @@ end
 Multiply the dense bivariate polynomial by `series` evaluated at ``L = xy``, truncated to
 bidegree `(N, N)`.
 """
+# `BigInt` arithmetic allocates a fresh object per operation, which dominates the two
+# kernels above once the truncation degree runs into the hundreds. These specialisations
+# accumulate through GMP in place instead, reusing one scratch integer. They are only
+# reachable when `with_fast_integers` has fallen back, since `CheckedInt128` is immutable.
+
+function multiply_truncated(first::Matrix{BigInt}, second::Matrix{BigInt}, N::Int)
+  product = zero_coefficients(BigInt, N + 1)
+  scratch = BigInt()
+  @inbounds for column in axes(second, 2), rowindex in axes(second, 1)
+    coefficient = second[rowindex, column]
+    iszero(coefficient) && continue
+    for other_column in axes(first, 2), other_row in axes(first, 1)
+      value = first[other_row, other_column]
+      iszero(value) && continue
+      i = other_row + rowindex - 1
+      j = other_column + column - 1
+      (i <= N + 1 && j <= N + 1) || continue
+      MPZ.mul!(scratch, coefficient, value)
+      MPZ.add!(product[i, j], scratch)
+    end
+  end
+  return product
+end
+
+function multiply_by_lefschetz_series(dense::Matrix{BigInt}, series::Vector{BigInt}, N::Int)
+  product = zero_coefficients(BigInt, N + 1)
+  scratch = BigInt()
+  @inbounds for j in axes(dense, 2), i in axes(dense, 1)
+    value = dense[i, j]
+    iszero(value) && continue
+    for power in 0:(N + 1 - max(i, j))
+      coefficient = series[power + 1]
+      iszero(coefficient) && continue
+      MPZ.mul!(scratch, coefficient, value)
+      MPZ.add!(product[i + power, j + power], scratch)
+    end
+  end
+  return product
+end
+
 function multiply_by_lefschetz_series(
   dense::Matrix{T}, series::Vector{T}, N::Int
 ) where {T<:Number}
@@ -303,6 +348,43 @@ function falling_binomial(upper::Integer, lower::Integer)
   return value ÷ factorial(BigInt(lower))
 end
 
+"""
+    accumulate_scaled!(destination, source, coefficient, shift_a, shift_b, width)
+
+Add `coefficient * source` into `destination`, shifted by `(shift_a, shift_b)`.
+
+The `BigInt` method accumulates through GMP in place, so the innermost loop of Göttsche's
+product does not allocate two integers per term.
+"""
+function accumulate_scaled!(
+  destination::Matrix{T}, source::Matrix{T}, coefficient::T, shift_a, shift_b, width
+) where {T<:Number}
+  @inbounds for j in 1:width, i in 1:width
+    value = source[i, j]
+    iszero(value) && continue
+    destination[i + shift_a, j + shift_b] += coefficient * value
+  end
+  return destination
+end
+
+function accumulate_scaled!(
+  destination::Matrix{BigInt},
+  source::Matrix{BigInt},
+  coefficient::BigInt,
+  shift_a,
+  shift_b,
+  width,
+)
+  scratch = BigInt()
+  @inbounds for j in 1:width, i in 1:width
+    value = source[i, j]
+    iszero(value) && continue
+    MPZ.mul!(scratch, coefficient, value)
+    MPZ.add!(destination[i + shift_a, j + shift_b], scratch)
+  end
+  return destination
+end
+
 # ── Göttsche's formula for Hilbert schemes of points ────────────────────────────
 
 """
@@ -354,11 +436,7 @@ function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {
       destination = accumulator[s + 1]
       shift_a, shift_b = power * (p + k - 1), power * (q + k - 1)
       width = size(source, 1)
-      @inbounds for j in 1:width, i in 1:width
-        value = source[i, j]
-        iszero(value) && continue
-        destination[i + shift_a, j + shift_b] += coefficient * value
-      end
+      accumulate_scaled!(destination, source, coefficient, shift_a, shift_b, width)
     end
   end
   return accumulator

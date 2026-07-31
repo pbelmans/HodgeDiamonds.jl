@@ -10,6 +10,7 @@ See the [documentation](https://pbelmans.ncag.info/HodgeDiamonds.jl) to get star
 module HodgeDiamonds
 
 using AbstractAlgebra
+using Base.GMP: MPZ
 using Combinatorics: multiexponents, partitions, powerset
 using PrecompileTools: @compile_workload
 using Semisimple: Semisimple
