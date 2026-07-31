@@ -73,12 +73,9 @@ end
 # ── dense truncated bivariate polynomials ────────────────────────────────────────
 #
 # `coefficients[i + 1, j + 1]` is the coefficient of ``x^i y^j``, and terms of exponent
-# greater than `N` are dropped. Entries are allocated individually (not with
-# `zeros(BigInt, …)`, which would share one object across all slots).
+# greater than `N` are dropped.
 
-function zero_coefficients(::Type{T}, size::Int) where {T<:Number}
-  return T[zero(T) for _ in 1:size, _ in 1:size]
-end
+zero_coefficients(::Type{T}, size::Int) where {T<:Number} = zeros(T, size, size)
 zero_coefficients(size::Int) = zero_coefficients(BigInt, size)
 
 function dense_monomial(i::Int, j::Int, coefficient::T, N::Int) where {T<:Number}
@@ -172,7 +169,7 @@ polynomial_to_dense(f::HPoly, N::Int) = polynomial_to_dense(BigInt, f, N)
 # `series[m + 1]` is the coefficient of ``L^m``.
 
 function series_one(::Type{T}, N::Int) where {T<:Number}
-  series = [zero(T) for _ in 0:N]
+  series = zeros(T, N + 1)
   series[1] = one(T)
   return series
 end
@@ -188,7 +185,7 @@ end
 series_one_minus_power(e::Int, N::Int) = series_one_minus_power(BigInt, e, N)
 
 function series_multiply(first::Vector{T}, second::Vector{T}, N::Int) where {T<:Number}
-  product = [zero(T) for _ in 0:N]
+  product = zeros(T, N + 1)
   @inbounds for i in eachindex(first)
     iszero(first[i]) && continue
     for j in eachindex(second)
