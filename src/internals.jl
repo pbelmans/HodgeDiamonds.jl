@@ -297,6 +297,21 @@ function multiply_by_lefschetz_series!(
 end
 
 """
+    lefschetz_shift(dense, k, N)
+
+Multiply a dense bivariate polynomial by ``L^k = (xy)^k``, truncated to bidegree `(N, N)`.
+
+Always a fresh matrix, including for `k` zero, so the result is safe to accumulate into.
+"""
+function lefschetz_shift(dense::Matrix{T}, k::Int, N::Int) where {T<:Number}
+  @assert k >= 0 "shift must be non-negative"
+  shifted = zero_coefficients(T, N + 1)
+  kept = 1:(N + 1 - k)
+  shifted[kept .+ k, kept .+ k] = dense[kept, kept]
+  return shifted
+end
+
+"""
     multiply_by_lefschetz_series(dense, series, N)
 
 Multiply the dense bivariate polynomial by `series` evaluated at ``L = xy``, truncated to

@@ -67,18 +67,11 @@ function nestedhilbn(S::HodgeDiamond, n::Integer)
 
   # the Göttsche series is the same as for `hilbn`; here it gets multiplied by
   # S(x, y) * t / (1 - xyt), so the coefficient of t^n picks up a Lefschetz twist
-  coefficient_type = eltype(first(series))
-  surface_dense = polynomial_to_dense(coefficient_type, polynomial(S), 2n)
-  top = zero_coefficients(coefficient_type, 2n + 1)
+  surface_dense = polynomial_to_dense(BigInt, polynomial(S), 2n)
+  top = zero_coefficients(2n + 1)
   for s in 0:(n - 1)
     piece = multiply_truncated(series[s + 1], surface_dense, 2n)
-    shift = n - s - 1
-    for j in axes(piece, 2), i in axes(piece, 1)
-      value = piece[i, j]
-      iszero(value) && continue
-      (i + shift <= 2n + 1 && j + shift <= 2n + 1) &&
-        (top[i + shift, j + shift] += value)
-    end
+    top .+= lefschetz_shift(piece, n - s - 1, 2n)
   end
 
   M = zero_coefficients(2n + 1)
@@ -148,15 +141,12 @@ function hilbthree(X::HodgeDiamond)
   return HodgeDiamond(divexact(sixfold, R(6)); from_variety=true)
 end
 
-# f(sign * x^power, sign * y^power)
-function _substitute_powers(f::HPoly, power::Int, sign::Int)
-  return build_polynomial(
-    (
-      (sign == -1 ? (-1)^(exponents[1] + exponents[2]) : 1) * coefficient,
-      [power * exponents[1], power * exponents[2]],
-    ) for (coefficient, exponents) in each_term(f)
+# f(sign * x^power, sign * y^power), for a sign of plus or minus one
+_substitute_powers(f::HPoly, power::Int, sign::Int) =
+  build_polynomial(
+    (sign^sum(exponents) * coefficient, power * exponents) for
+    (coefficient, exponents) in each_term(f)
   )
-end
 
 """
     K3n(n)
@@ -569,16 +559,6 @@ function _adams(dense::Matrix{T}, n::Int, N::Int) where {T<:Number}
   return image
 end
 
-"Multiply a dense series by ``L^k = (xy)^k``, truncated at bidegree `N`."
-function _lefschetz_shift(dense::Matrix{T}, k::Int, N::Int) where {T<:Number}
-  @assert k >= 0 "shift must be non-negative"
-  iszero(k) && return dense
-  shifted = zero_coefficients(T, N + 1)
-  kept = 1:(N + 1 - k)
-  shifted[kept .+ k, kept .+ k] = dense[kept, kept]
-  return shifted
-end
-
 # Product of two series in ``\tilde s``, both in the normalisation where `A[m]` stands for
 # the coefficient ``L^{-K_m}A[m]``. The shifts to reinstate are non-negative because `K` is
 # convex: ``K_i + K_j \le K_{i+j}``.
@@ -586,7 +566,7 @@ function _shifted_convolve(A::Vector{Matrix{T}}, B::Vector{Matrix{T}}, K, N::Int
   product = [zero_coefficients(T, N + 1) for _ in eachindex(A)]
   for m in eachindex(A), i in 1:(m - 1)
     piece = multiply_truncated(A[i], B[m - i], N)
-    product[m] .+= _lefschetz_shift(piece, K(m) - K(i) - K(m - i), N)
+    product[m] .+= lefschetz_shift(piece, K(m) - K(i) - K(m - i), N)
   end
   return product
 end
@@ -628,13 +608,13 @@ function _intersection_moduli_vector_bundles(r::Int, d::Int, g::Int)
     m = e ÷ n
     # ψ^n(s̃) = (-1)^{(n+1)c} s̃^n, so an even `n` flips the sign of an odd `c` and `m`
     sign = isodd(c) && iseven(n) && isodd(m) ? -1 : 1
-    image = _lefschetz_shift(_adams(logarithm[m], n, N), K(e) - n * K(m), N)
+    image = lefschetz_shift(_adams(logarithm[m], n, N), K(e) - n * K(m), N)
     total .+= T(sign * mobius, n) .* image
   end
 
   # E(IH^*(M(r,d))) = (L-1) G, then divide out the Jacobian for the fixed determinant
   # convention of `moduli_vector_bundles`
-  total = _lefschetz_shift(total, 1, N) .- total
+  total = lefschetz_shift(total, 1, N) .- total
   fixed = multiply_truncated(total, inverse_truncated(jacobian_class, N), N)
 
   # the quotient must be a polynomial of the bidegree of the fixed determinant moduli

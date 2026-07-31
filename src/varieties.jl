@@ -613,17 +613,18 @@ function weighted_hypersurface(degree::Integer, weights)
     series = series_multiply(series, series_geometric(Int(weight), precision), precision)
   end
 
-  function hodge(i, j)
-    i + j != n - 1 && return i == j ? BigInt(1) : BigInt(0)
+  # only the primitive middle cohomology comes from the series, the rest of the diamond is
+  # the diagonal inherited from the ambient weighted projective space
+  function primitive(j)
     index = j * degree + degree - total_weight
-    value = 0 <= index <= precision ? series[index + 1] : BigInt(0)
-    return i == j ? value + 1 : value
+    return 0 <= index <= precision ? series[index + 1] : BigInt(0)
   end
 
   M = zero_coefficients(n)
   for i in 0:(n - 1)
     M[i + 1, i + 1] = 1
-    M[i + 1, n - i] = hodge(i, n - i - 1)
+    # for odd `n` the middle of the antidiagonal is also on the diagonal, and gets both
+    M[i + 1, n - i] += primitive(n - i - 1)
   end
   return HodgeDiamond(M; from_variety=true)
 end
