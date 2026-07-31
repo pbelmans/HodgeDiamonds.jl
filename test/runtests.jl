@@ -127,6 +127,9 @@ const HD = HodgeDiamonds
     @test dimension(1 + h) == 2
     @test dimension(3 * h) == 2
     @test h^0 == one(HochschildHomology)
+    @test from_list([0, 1, 0]) == from_list([0, 0, 1, 0, 0])
+    @test hash(h) == hash(from_list([1, 0, 22, 0, 1]))
+    @test length(Dict(h => 1, from_list([1, 0, 22, 0, 1]) => 2)) == 1
     @test collect(sym(h, 2)) == BigInt[1, 0, 23, 0, 276, 0, 23, 0, 1]
     @test repr(MIME("text/plain"), h) ==
       "  -2   -1   0    1   2\n  1    0    22   0   1"

@@ -181,7 +181,12 @@ for operator in (:+, :-, :*)
     $operator(HochschildHomology(n), h)
 end
 
-Base.:(==)(g::HochschildHomology, h::HochschildHomology) = polynomial(g) == polynomial(h)
+# The stored vector can carry padding zeroes, so equality and hashing both go through the
+# trimmed one, which is the same for `from_list([0, 1, 0])` and `from_list([0, 0, 1, 0, 0])`.
+_trimmed(h::HochschildHomology) = [h[i] for i in (-dimension(h)):dimension(h)]
+
+Base.:(==)(g::HochschildHomology, h::HochschildHomology) = _trimmed(g) == _trimmed(h)
+Base.hash(h::HochschildHomology, u::UInt) = hash(_trimmed(h), hash(:HochschildHomology, u))
 Base.zero(::Type{HochschildHomology}) = HochschildHomology([0])
 Base.one(::Type{HochschildHomology}) = HochschildHomology([1])
 
