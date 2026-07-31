@@ -1,0 +1,7 @@
+[deps]
+AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+HodgeDiamonds = "683f8233-a80c-4a96-9568-157369475735"
+
+[compat]
+Documenter = "1"
