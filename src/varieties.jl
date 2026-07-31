@@ -130,7 +130,7 @@ function surface(genus::Integer, irregularity::Integer, h11::Integer)
 end
 
 """
-    symmetric_power(n, genus)
+    symn(genus, n)
 
 Hodge diamond of the `n`th symmetric power of a curve of the given genus.
 
@@ -144,7 +144,7 @@ Macdonald, should exist.
 # Examples
 
 ```jldoctest
-symmetric_power(2, 3)
+symn(3, 2)
 
 # output
 
@@ -156,30 +156,27 @@ symmetric_power(2, 3)
 ```
 
 ```jldoctest
-julia> all(symmetric_power(1, genus) == curve(genus) for genus in 0:9)
+julia> all(symn(genus, 1) == curve(genus) for genus in 0:9)
 true
 
-julia> symmetric_power(0, 4) == point()
+julia> symn(4, 0) == point()
 true
 
-julia> symmetric_power(-1, 4) == zero(HodgeDiamond)
+julia> symn(4, -1) == zero(HodgeDiamond)
 true
 ```
 """
-function symmetric_power(n::Integer, genus::Integer)
+function symn(genus::Integer, n::Integer)
   n < 0 && return zero(HodgeDiamond)
-  function hodge(p, q)
-    return if p > q
-      hodge(q, p)
-    elseif p + q > n
-      hodge(n - p, n - q)
-    else
-      sum(
-        binomial(BigInt(genus), p - k) * binomial(BigInt(genus), q - k) for k in 0:p
-      )
-    end
-  end
-  return HodgeDiamond([hodge(i, j) for i in 0:n, j in 0:n])
+  return HodgeDiamond([_symn_hodge(genus, n, p, q) for p in 0:n, q in 0:n])
+end
+
+# The binomial sum is valid for p <= q with p + q <= n; the rest of the square follows by
+# Hodge symmetry and Serre duality.
+function _symn_hodge(genus::Integer, n::Integer, p::Integer, q::Integer)
+  p > q && return _symn_hodge(genus, n, q, p)
+  p + q > n && return _symn_hodge(genus, n, n - p, n - q)
+  return sum(binomial(BigInt(genus), p - k) * binomial(BigInt(genus), q - k) for k in 0:p)
 end
 
 """

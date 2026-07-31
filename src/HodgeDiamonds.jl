@@ -75,7 +75,7 @@ export blowup, mirror, projective_bundle
 # ── exports from varieties.jl ───────────────────────────────────────────────────
 
 export 𝕃, ℙ, χ, χ_top, χ_y
-export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surface
+export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surface, symn
 export K3, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
 export complete_intersection, cyclic_cover, hypersurface, weighted_hypersurface
 export fano_threefold,

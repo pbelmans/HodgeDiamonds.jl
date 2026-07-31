@@ -20,7 +20,7 @@ complete_intersection
 
 ```@docs
 curve
-symmetric_power(::Integer, ::Integer)
+symn
 jacobian
 moduli_vector_bundles
 seshadris_desingularisation

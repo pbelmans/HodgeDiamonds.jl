@@ -683,7 +683,7 @@ For the proof see Proposition 4.5 of [1907.00826], or rather the reference [Bif8
 For rank 1 the Quot scheme is a symmetric power of the curve:
 
 ```jldoctest
-julia> all(quot_scheme_curve(3, n, 1) == symmetric_power(n, 3) for n in 0:4)
+julia> all(quot_scheme_curve(3, n, 1) == symn(3, n) for n in 0:4)
 true
 ```
 """
@@ -693,7 +693,7 @@ function quot_scheme_curve(genus::Integer, quotient_length::Integer, rank::Integ
       begin
         twist = sum((i - 1) * exponents[i] for i in eachindex(exponents))
         product = prod(
-          (symmetric_power(part, genus) for part in exponents); init=point()
+          (symn(genus, part) for part in exponents); init=point()
         )
         product(twist)
       end for exponents in multiexponents(Int(rank), Int(quotient_length))

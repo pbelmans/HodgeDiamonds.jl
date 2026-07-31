@@ -155,9 +155,9 @@ const R, x, y = hodge_ring()
     @test enriques() == surface(0, 0, 10)
     @test ruled(0) == hypersurface(2, 2)
     @test hopf() == inoue() == kodaira_secondary()
-    @test all(symmetric_power(1, g) == curve(g) for g in 0:9)
-    @test symmetric_power(0, 4) == point()
-    @test symmetric_power(-1, 4) == zero(HodgeDiamond)
+    @test all(symn(g, 1) == curve(g) for g in 0:9)
+    @test symn(4, 0) == point()
+    @test symn(4, -1) == zero(HodgeDiamond)
   end
 
   @testset "complete intersections" begin
@@ -234,7 +234,7 @@ const R, x, y = hodge_ring()
       fano_variety_intersection_quadrics_even(2, 0)
     @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 9)) ==
       fano_variety_intersection_quadrics_even(4, 2)
-    @test all(quot_scheme_curve(3, n, 1) == symmetric_power(n, 3) for n in 0:4)
+    @test all(quot_scheme_curve(3, n, 1) == symn(3, n) for n in 0:4)
     @test dimension(quot_scheme_curve(2, 3, 2)) == 6
   end
 
