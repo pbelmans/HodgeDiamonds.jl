@@ -1044,22 +1044,17 @@ function quiver_moduli(Q, d; mu=nothing)
   return HodgeDiamond(finish(builder))
 end
 
+# A quiver is acyclic exactly when its adjacency matrix is nilpotent, and an n × n matrix
+# is nilpotent as soon as its nth power vanishes: a walk of length n repeats a vertex. Only
+# the support of each power matters, so we saturate the entries and nothing can overflow.
+# The diagonal takes part, so a loop at a vertex counts as a cycle like any other.
 function _is_acyclic(adjacency::Matrix{Int})
-  n = size(adjacency, 1)
-  state = zeros(Int, n)                       # 0 unvisited, 1 on stack, 2 done
-  function visit(node)
-    state[node] == 1 && return false
-    state[node] == 2 && return true
-    state[node] = 1
-    for other in 1:n
-      # the diagonal is included, so a loop at a vertex is a cycle like any other
-      iszero(adjacency[node, other]) && continue
-      visit(other) || return false
-    end
-    state[node] = 2
-    return true
+  support = .!iszero.(adjacency)
+  power = support
+  for _ in 2:size(adjacency, 1)
+    power = .!iszero.(power * support)
   end
-  return all(visit(node) for node in 1:n)
+  return iszero(power)
 end
 
 # ── Brauer--Severi schemes of hereditary orders ──────────────────────────────────
