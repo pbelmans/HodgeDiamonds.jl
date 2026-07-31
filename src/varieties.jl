@@ -723,7 +723,7 @@ true
 """
 function fano_threefold(rank::Integer, identifier::Integer)
   rank in eachindex(FANO_THREEFOLD_H12) &&
-    identifier in eachindex(FANO_THREEFOLD_H12[rank]) ||
+  identifier in eachindex(FANO_THREEFOLD_H12[rank]) ||
     throw(ArgumentError("no Fano threefold with rank $rank and number $identifier"))
   h12 = FANO_THREEFOLD_H12[rank][identifier]
   return HodgeDiamond([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)

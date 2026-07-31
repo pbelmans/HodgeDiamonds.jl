@@ -45,7 +45,7 @@ jobs:
         with:
           version: "1"
       - uses: julia-actions/cache@v2
-      - run: julia -e 'using Pkg; Pkg.add(PackageSpec(name="JuliaFormatter", version="1"))'
+      - run: julia -e 'using Pkg; Pkg.add(PackageSpec(name="JuliaFormatter", version="2"))'
       - run: |
           julia -e '
             using JuliaFormatter
