@@ -52,6 +52,24 @@ Base.BigInt(a::CheckedInt128) = BigInt(a.value)
 Base.convert(::Type{CheckedInt128}, x::Integer) = CheckedInt128(x)
 Base.promote_rule(::Type{CheckedInt128}, ::Type{<:Integer}) = CheckedInt128
 
+"""
+    with_fast_integers(worker)
+
+Run `worker(CheckedInt128)`, retrying as `worker(BigInt)` if 128 bits turn out not to be
+enough. The worker is generic in its coefficient type, so there is only ever one algorithm.
+
+Nothing computable in reasonable time overflows in Göttsche's formula, but del Baño's does
+from around rank 6 and genus 9, which is well inside what one might ask for.
+"""
+function with_fast_integers(worker)
+    try
+        return worker(CheckedInt128)
+    catch problem
+        problem isa OverflowError || rethrow()
+        return worker(BigInt)
+    end
+end
+
 # ── dense truncated bivariate polynomials ────────────────────────────────────────
 #
 # `coefficients[i + 1, j + 1]` is the coefficient of ``x^i y^j``, and terms of exponent
@@ -135,14 +153,15 @@ function dense_to_polynomial(dense::Matrix{<:Number})
     return finish(builder)
 end
 
-function polynomial_to_dense(f::HPoly, N::Int)
-    dense = zero_coefficients(N + 1)
+function polynomial_to_dense(::Type{T}, f::HPoly, N::Int) where {T<:Number}
+    dense = zero_coefficients(T, N + 1)
     for (coefficient, exponents) in zip(coefficients(f), exponent_vectors(f))
         (exponents[1] <= N && exponents[2] <= N) &&
-            (dense[exponents[1] + 1, exponents[2] + 1] = BigInt(coefficient))
+            (dense[exponents[1] + 1, exponents[2] + 1] = T(BigInt(coefficient)))
     end
     return dense
 end
+polynomial_to_dense(f::HPoly, N::Int) = polynomial_to_dense(BigInt, f, N)
 
 # ── truncated univariate series in the Lefschetz class ``L = xy`` ────────────────
 #
@@ -294,11 +313,14 @@ Each factor is expanded by the binomial series (valid for negative exponents too
 coefficients are single monomials, so multiplying it in is an index shift and a scaled add
 rather than a polynomial multiplication.
 """
-function hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int)
-    n == 0 && return [dense_monomial(0, 0, BigInt(1), 0)]
-    accumulator = [zero_coefficients(2s + 1) for s in 0:n]
-    accumulator[1][1, 1] = BigInt(1)
-    scratch = [zero_coefficients(2s + 1) for s in 0:n]
+hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int) =
+    with_fast_integers(T -> _hilbn_series(T, hodge_numbers, n))
+
+function _hilbn_series(::Type{T}, hodge_numbers::Matrix{BigInt}, n::Int) where {T<:Number}
+    n == 0 && return [dense_monomial(0, 0, one(T), 0)]
+    accumulator = [zero_coefficients(T, 2s + 1) for s in 0:n]
+    accumulator[1][1, 1] = one(T)
+    scratch = [zero_coefficients(T, 2s + 1) for s in 0:n]
     for k in 1:n, p in 0:2, q in 0:2
         hodge_number = hodge_numbers[p + 1, q + 1]
         iszero(hodge_number) && continue
@@ -306,7 +328,7 @@ function hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int)
         exponent = epsilon * hodge_number
         maximum_power = fld(n, k)
         factor = [
-            falling_binomial(exponent, power) * BigInt(epsilon)^power for
+            T(falling_binomial(exponent, power) * BigInt(epsilon)^power) for
             power in 0:maximum_power
         ]
         for s in 0:n

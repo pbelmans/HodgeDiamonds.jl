@@ -58,8 +58,9 @@ function nestedhilbn(S::HodgeDiamond, n::Integer)
 
     # the Göttsche series is the same as for `hilbn`; here it gets multiplied by
     # S(x, y) * t / (1 - xyt), so the coefficient of t^n picks up a Lefschetz twist
-    surface_dense = polynomial_to_dense(polynomial(S), 2n)
-    top = zero_coefficients(2n + 1)
+    coefficient_type = eltype(first(series))
+    surface_dense = polynomial_to_dense(coefficient_type, polynomial(S), 2n)
+    top = zero_coefficients(coefficient_type, 2n + 1)
     for s in 0:(n - 1)
         piece = multiply_truncated(series[s + 1], surface_dense, 2n)
         shift = n - s - 1
@@ -366,13 +367,7 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
     r >= 2 || throw(ArgumentError("rank needs to be at least 2"))
     g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
     gcd(r, d) == 1 || throw(ArgumentError("rank and degree need to be coprime"))
-    # machine integers first, arbitrary precision only if they turn out not to fit
-    total = try
-        _del_bano(CheckedInt128, r, d, g)
-    catch problem
-        problem isa OverflowError || rethrow()
-        _del_bano(BigInt, r, d, g)
-    end
+    total = with_fast_integers(T -> _del_bano(T, r, d, g))
     return from_polynomial(dense_to_polynomial(total); from_variety=true)
 end
 
