@@ -68,17 +68,6 @@ true
 from_positive(L::AbstractVector{<:Integer}) =
   HochschildHomology(vcat(reverse(L)[1:(end - 1)], L))
 
-# Build from `exponent => coefficient` pairs, padding to a symmetric range.
-function _from_terms(terms)
-  isempty(terms) && return HochschildHomology([0])
-  reach = maximum(abs(exponent) for (exponent, _) in terms)
-  entries = [BigInt(0) for _ in (-reach):reach]
-  for (exponent, coefficient) in terms
-    entries[reach + 1 - exponent] += coefficient
-  end
-  return HochschildHomology(entries)
-end
-
 """
     polynomial(h::HochschildHomology)
 
@@ -146,19 +135,25 @@ julia> euler(HochschildHomology([1, 0, 22, 0, 1]))
 euler(h::HochschildHomology) = evaluate(polynomial(h), -1)
 
 # Arithmetic works directly on the coefficient vectors: going through the Laurent
-# polynomial ring for every operation would be needless indirection.
-function _terms(h::HochschildHomology)
-  return [(i, h[i]) for i in (-(length(h.L) ÷ 2)):(length(h.L) ÷ 2) if !is_zero(h[i])]
-end
+# polynomial ring for every operation would be needless indirection. `_reach(h)` is the
+# largest index `h.L` stores, so `h[i]` vanishes beyond it.
+_reach(h::HochschildHomology) = length(h.L) ÷ 2
 
 function Base.:+(g::HochschildHomology, h::HochschildHomology)
-  return _from_terms(vcat(_terms(g), _terms(h)))
+  n = max(_reach(g), _reach(h))
+  return HochschildHomology([g[i] + h[i] for i in (-n):n])
 end
+
 function Base.:-(g::HochschildHomology, h::HochschildHomology)
-  return _from_terms(vcat(_terms(g), [(i, -c) for (i, c) in _terms(h)]))
+  n = max(_reach(g), _reach(h))
+  return HochschildHomology([g[i] - h[i] for i in (-n):n])
 end
+
 function Base.:*(g::HochschildHomology, h::HochschildHomology)
-  return _from_terms([(i + j, c * d) for (i, c) in _terms(g) for (j, d) in _terms(h)])
+  n = _reach(g) + _reach(h)
+  return HochschildHomology([
+    sum((g[j] * h[i - j] for j in (-_reach(g)):_reach(g)); init=BigInt(0)) for i in (-n):n
+  ])
 end
 Base.:^(h::HochschildHomology, k::Integer) = prod(Iterators.repeated(h, k); init=one(h))
 
@@ -222,7 +217,8 @@ function symmetric_power(h::HochschildHomology, k::Integer)
       total[exponent] = get(total, exponent, BigInt(0)) + coefficient
     end
   end
-  return _from_terms(collect(total))
+  reach = maximum((abs(exponent) for (exponent, _) in total); init=0)
+  return HochschildHomology([get(total, i, BigInt(0)) for i in (-reach):reach])
 end
 
 function _convolve(first::Dict{Int,BigInt}, second::Dict{Int,BigInt})
