@@ -424,7 +424,10 @@ function _del_bano(::Type{T}, r::Int, d::Int, g::Int) where {T<:Number}
 
   numerator_cache = Dict{Tuple{Vector{Int},Int},Matrix{T}}()
   total = zero_coefficients(T, N + 1)
-  for composition in compositions(r)
+  # longest compositions first: they carry the largest binomial coefficients, so when
+  # `CheckedInt128` is going to overflow it does so on the first one rather than the last,
+  # which makes the discarded attempt cheap. The sum does not depend on the order.
+  for composition in sort(compositions(r); by=length, rev=true)
     k = length(composition)
 
     # del Baño's fourth factor is a power of the Lefschetz class
