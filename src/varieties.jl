@@ -611,11 +611,7 @@ function weighted_hypersurface(degree::Integer, weights)
     series = series_multiply(
       series, series_one_minus_power(Int(degree - weight), precision), precision
     )
-    series = series_multiply(
-      series,
-      series_inverse(series_one_minus_power(Int(weight), precision), precision),
-      precision,
-    )
+    series = series_multiply(series, series_geometric(Int(weight), precision), precision)
   end
 
   function hodge(i, j)

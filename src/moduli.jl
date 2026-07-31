@@ -546,6 +546,7 @@ function seshadris_desingularisation(genus::Integer)
   end
 
   one_minus(e) = series_one_minus_power(T, e, N)
+  geometric(e) = series_geometric(T, e, N)              # 1 / (1 - L^e)
   inverse_of(series) = series_inverse(series, N)
   lefschetz_power_dense(e) = dense_monomial(e, e, one(T), N)
 
@@ -561,7 +562,7 @@ function seshadris_desingularisation(genus::Integer)
   N >= 1 && (one_plus[2] += one(T))
   part_two = multiply_by_lefschetz_series(
     multiply_by_lefschetz_series(
-      A, series_multiply(lefschetz_minus_power, inverse_of(one_minus(1)), N), N
+      A, series_multiply(lefschetz_minus_power, geometric(1), N), N
     ) + (A + B) .// 2,
     inverse_of(one_plus),
     N,
@@ -569,7 +570,7 @@ function seshadris_desingularisation(genus::Integer)
 
   shifted_A = copy(A)
   shifted_A[1, 1] -= T(BigInt(2)^(2g))
-  ratio = series_multiply(one_minus(g - 1), inverse_of(one_minus(1)), N)
+  ratio = series_multiply(one_minus(g - 1), geometric(1), N)
   part_three = multiply_by_lefschetz_series(
     shifted_A .// 2, series_multiply(ratio, ratio, N), N
   )
@@ -577,7 +578,7 @@ function seshadris_desingularisation(genus::Integer)
   shifted_B = B .// 2
   shifted_B[1, 1] -= T(BigInt(2)^(2g - 1))
   part_four = multiply_by_lefschetz_series(
-    shifted_B, series_multiply(one_minus(2g - 2), inverse_of(one_minus(2)), N), N
+    shifted_B, series_multiply(one_minus(2g - 2), geometric(2), N), N
   )
 
   first_five = series_multiply(
@@ -796,11 +797,7 @@ function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
       )
     end
     for l in 1:(2i - 2)
-      series = series_multiply(
-        series,
-        series_inverse(series_one_minus_power(2l, precision), precision),
-        precision,
-      )
+      series = series_multiply(series, series_geometric(2l, precision), precision)
     end
     multiplicity_series[j] = series
   end

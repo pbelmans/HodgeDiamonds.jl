@@ -184,6 +184,13 @@ function series_one_minus_power(::Type{T}, e::Int, N::Int) where {T<:Number}
 end
 series_one_minus_power(e::Int, N::Int) = series_one_minus_power(BigInt, e, N)
 
+"The series ``1/(1-L^e)=1+L^e+L^{2e}+\\ldots``, truncated at ``L^N``."
+function series_geometric(::Type{T}, e::Int, N::Int) where {T<:Number}
+  e >= 1 || throw(ArgumentError("exponent needs to be positive"))
+  return [is_zero(m % e) ? one(T) : zero(T) for m in 0:N]
+end
+series_geometric(e::Int, N::Int) = series_geometric(BigInt, e, N)
+
 function series_multiply(first::Vector{T}, second::Vector{T}, N::Int) where {T<:Number}
   product = zeros(T, N + 1)
   @inbounds for i in eachindex(first)
