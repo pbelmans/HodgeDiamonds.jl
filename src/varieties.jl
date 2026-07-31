@@ -359,7 +359,10 @@ function complete_intersection(degrees, dimension::Integer)
   end
   product[1, 1] -= 1                                      # subtract the leading 1
 
-  ambient = multiply_truncated(dense_one(N) + _one_plus(N), dense_one(N), N)
+  ambient = zero_coefficients(N + 1)                       # (1 + a)(1 + b)
+  for i in 0:min(1, N), j in 0:min(1, N)
+    ambient[i + 1, j + 1] = 1
+  end
   generating = multiply_truncated(product, inverse_truncated(ambient, N), N)
   for k in 0:N                                            # add 1/(1 - ab)
     generating[k + 1, k + 1] += 1
@@ -373,13 +376,6 @@ function complete_intersection(degrees, dimension::Integer)
     M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
   end
   return from_matrix(M; from_variety=true)
-end
-
-# (1 + a)(1 + b) - 1, so that `dense_one(N) + _one_plus(N)` is (1 + a)(1 + b)
-function _one_plus(N::Int)
-  dense = zero_coefficients(N + 1)
-  N >= 1 && (dense[2, 1] = 1; dense[1, 2] = 1; dense[2, 2] = 1)
-  return dense
 end
 
 """

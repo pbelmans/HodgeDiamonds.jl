@@ -547,17 +547,14 @@ function seshadris_desingularisation(genus::Integer)
     N,
   )
 
-  lefschetz_minus_power = series_one(T, N)                   # L - L^g
-  lefschetz_minus_power[1] -= one(T)
-  N >= 1 && (lefschetz_minus_power[2] += one(T))
-  g <= N && (lefschetz_minus_power[g + 1] -= one(T))
+  lefschetz_minus_power = _shift_series(one_minus(g - 1), 1, N)   # L - L^g = L(1 - L^{g-1})
+  one_plus = series_one(T, N)                                    # 1 + L
+  N >= 1 && (one_plus[2] += one(T))
   part_two = multiply_by_lefschetz_series(
     multiply_by_lefschetz_series(
-      multiply_truncated(A, dense_one(T, N), N),
-      series_multiply(lefschetz_minus_power, inverse_of(one_minus(1)), N),
-      N,
+      A, series_multiply(lefschetz_minus_power, inverse_of(one_minus(1)), N), N
     ) + (A + B) .// 2,
-    inverse_of(_series_one_plus_lefschetz(T, N)),
+    inverse_of(one_plus),
     N,
   )
 
@@ -590,21 +587,13 @@ function seshadris_desingularisation(genus::Integer)
   )
   part_five = multiply_by_lefschetz_series(
     dense_monomial(0, 0, T(BigInt(2)^(2g)), N),
-    series_multiply(
-      first_five + _shift_series(second_five, g - 2, N), series_one(T, N), N
-    ),
+    first_five + _shift_series(second_five, g - 2, N),
     N,
   )
 
   return from_polynomial(
     _to_integral_polynomial(part_one - part_two + part_three + part_four + part_five)
   )
-end
-
-function _series_one_plus_lefschetz(::Type{T}, N::Int) where {T<:Number}
-  series = series_one(T, N)
-  N >= 1 && (series[2] += one(T))
-  return series
 end
 
 function _shift_series(series::Vector{T}, shift::Int, N::Int) where {T<:Number}

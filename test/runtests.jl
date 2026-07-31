@@ -95,7 +95,6 @@ const HD = HodgeDiamonds
       "          1\n      0        0\n  1       20       1\n      0        0\n          1"
     @test repr(K3()) == "Hodge diamond of size 3 and dimension 2"
 
-    hidden = sprint(pprint, Pn(2) * curve(3); context=:x => 1)
     @test sprint(io -> pprint(io, Pn(2) * curve(3); hide_zeroes=true)) ==
       "      1\n  3       3\n      2\n  3       3\n      2\n  3       3\n      1"
     @test sprint(io -> pprint(io, Pn(2) * curve(3); quarter=true)) ==
