@@ -105,6 +105,17 @@ function build_polynomial(terms)
   return finish(builder)
 end
 
+"""
+    diagonal_polynomial(coefficients)
+
+The Hodge--Poincaré polynomial with `coefficients[i + 1]` in bidegree ``(i, i)``, which is
+what counting cells of a cellular decomposition gives.
+"""
+diagonal_polynomial(coefficients) =
+  build_polynomial(
+    (coefficient, [i - 1, i - 1]) for (i, coefficient) in enumerate(coefficients)
+  )
+
 "The numerator of a rational that must be an integer, as del Baño's and Göttsche's sums are."
 function _integral(value)
   isone(Base.denominator(value)) ||

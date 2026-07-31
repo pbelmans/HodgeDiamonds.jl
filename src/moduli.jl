@@ -870,9 +870,7 @@ function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
   cell_count(degree) =
     sum(multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i; init=BigInt(0))
   return HodgeDiamond(
-    build_polynomial(
-      (cell_count(degree), [degree, degree]) for degree in 0:(i * (2g - 2i))
-    );
+    diagonal_polynomial(cell_count(degree) for degree in 0:(i * (2g - 2i)));
     from_variety=true,
   )
 end
@@ -1020,9 +1018,7 @@ function quiver_moduli(Q, d; mu=nothing)
 
   # substitute v = xy
   return HodgeDiamond(
-    build_polynomial(
-      (_integral(coeff(poincare, i)), [i, i]) for i in 0:degree(poincare)
-    ),
+    diagonal_polynomial(_integral(coeff(poincare, i)) for i in 0:degree(poincare))
   )
 end
 
