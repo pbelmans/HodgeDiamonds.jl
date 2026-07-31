@@ -223,6 +223,13 @@ const HD = HodgeDiamonds
         @test dimension(generalised_grassmannian("E7", 7)) == 27
         @test dimension(generalised_grassmannian("G2", 1)) == 5
         @test lagrangian_grassmannian(2) == symplectic_grassmannian(2, 4)
+        # degenerate low-rank labels: B1 = C1 = A1, D2 = A1 x A1, D3 = A3
+        @test lagrangian_grassmannian(1) == Pn(1)
+        @test symplectic_grassmannian(1, 2) == Pn(1)
+        @test orthogonal_grassmannian(1, 6) == hypersurface(2, 4)
+        @test orthogonal_grassmannian(1, 4) == Pn(1)
+        @test dimension(orthogonal_grassmannian(2, 6)) == 3
+        @test dimension(orthogonal_grassmannian(2, 8)) == 9
         @test odd_symplectic_grassmannian(1, 5) == Pn(4)
         @test dimension(orthogonal_grassmannian(2, 7)) == 7
         @test horospherical("X5") == horospherical("G2", 1, 2)
@@ -382,7 +389,15 @@ const HD = HodgeDiamonds
             degrees(Semisimple.TypeG2())
         @test degrees(HD.levi_type(HD.parse_dynkin("B4"), [2, 3, 4])) ==
             degrees(Semisimple.TypeB{3}())
+        @test HD.parse_dynkin("C1") == Semisimple.TypeA{1}()
+        @test HD.parse_dynkin("B1") == Semisimple.TypeA{1}()
+        @test HD.parse_dynkin("D3") == Semisimple.TypeA{3}()
+        @test degrees(HD.parse_dynkin("D2")) == [2, 2]
+        # D3 = A3 permutes the vertices, since the D3 diagram is the path 2-1-3
+        @test HD._dynkin_and_vertices("D3", [2, 3])[2] == [1, 3]
+        @test HD._dynkin_and_vertices("B5", [2, 3])[2] == [2, 3]
         @test_throws ArgumentError HD.parse_dynkin("H4")
+        @test_throws ArgumentError HD.parse_dynkin("A0")
         @test_throws ArgumentError HD.levi_type(HD.parse_dynkin("A3"), Int[])
     end
 end

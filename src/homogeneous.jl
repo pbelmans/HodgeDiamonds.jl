@@ -13,22 +13,41 @@
 Parse a Dynkin type given in Sage's notation, such as `"A5"` or `"E8"`, into the
 corresponding Semisimple.jl type.
 
+Degenerate labels of low rank are normalised to their honest type, so that
+``\\mathrm{B}_1=\\mathrm{C}_1=\\mathrm{A}_1``,
+``\\mathrm{D}_2=\\mathrm{A}_1\\times\\mathrm{A}_1`` and
+``\\mathrm{D}_3=\\mathrm{A}_3``. Small orthogonal and symplectic Grassmannians reach these.
+
+Beware that the ``\\mathrm{D}_3=\\mathrm{A}_3`` identification permutes the vertices: the
+Bourbaki diagram of ``\\mathrm{D}_3`` is the path ``2-1-3``. Use
+[`_dynkin_and_vertices`](@ref) rather than this function when a vertex set is involved.
+
 # Examples
 
 ```jldoctest
 julia> HodgeDiamonds.parse_dynkin("E8")
 E8
+
+julia> HodgeDiamonds.parse_dynkin("C1")
+A1
 ```
 """
 function parse_dynkin(label::AbstractString)
     length(label) >= 2 || throw(ArgumentError("unknown Dynkin type $label"))
     letter = label[1]
     rank = tryparse(Int, label[2:end])
-    rank === nothing && throw(ArgumentError("unknown Dynkin type $label"))
+    (rank === nothing || rank < 1) && throw(ArgumentError("unknown Dynkin type $label"))
+    letter in ('A', 'B', 'C') && rank == 1 && return Semisimple.TypeA{1}()
     letter == 'A' && return Semisimple.TypeA{rank}()
     letter == 'B' && return Semisimple.TypeB{rank}()
     letter == 'C' && return Semisimple.TypeC{rank}()
-    letter == 'D' && return Semisimple.TypeD{rank}()
+    if letter == 'D'
+        rank == 2 && return Semisimple.ProductDynkinType(
+            Semisimple.TypeA{1}(), Semisimple.TypeA{1}()
+        )
+        rank == 3 && return Semisimple.TypeA{3}()
+        return Semisimple.TypeD{rank}()
+    end
     letter == 'E' && return Semisimple.TypeE{rank}()
     letter == 'F' && rank == 4 && return Semisimple.TypeF4()
     letter == 'G' && rank == 2 && return Semisimple.TypeG2()
@@ -37,6 +56,24 @@ end
 
 # Number of vertices of a Dynkin diagram given in Sage's notation.
 _dynkin_rank(label::AbstractString) = parse(Int, label[2:end])
+
+# Vertex relabellings forced by the low-rank identifications of `parse_dynkin`. Only D3
+# needs one: its Bourbaki diagram is the path 2-1-3, so passing its vertices to A3, whose
+# diagram is 1-2-3, would name the wrong nodes.
+const DYNKIN_RELABELLING = Dict("D3" => Dict(1 => 2, 2 => 1, 3 => 3))
+
+"""
+    _dynkin_and_vertices(label, vertices)
+
+The Semisimple.jl type for `label` together with `vertices` renamed to that type's own
+Bourbaki numbering.
+"""
+function _dynkin_and_vertices(label::AbstractString, vertices)
+    relabelling = get(DYNKIN_RELABELLING, label, nothing)
+    renamed =
+        relabelling === nothing ? collect(vertices) : [relabelling[v] for v in vertices]
+    return parse_dynkin(label), renamed
+end
 
 """
     levi_type(dynkin_type, vertices)
@@ -169,13 +206,13 @@ true
 ```
 """
 function partial_flag_variety(dynkin::AbstractString, vertices)
-    dynkin_type = parse_dynkin(dynkin)
+    dynkin_type, renamed = _dynkin_and_vertices(dynkin, vertices)
     numerator = _weyl_poincare(Semisimple.degrees_fundamental_invariants(dynkin_type))
-    denominator = if isempty(vertices)
+    denominator = if isempty(renamed)
         one(Rq)
     else
         _weyl_poincare(
-            Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, vertices))
+            Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, renamed))
         )
     end
     poincare = divexact(numerator, denominator)
