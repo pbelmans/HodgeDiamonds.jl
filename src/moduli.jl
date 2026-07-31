@@ -638,17 +638,16 @@ function moduli_parabolic_vector_bundles_rank_two(genus::Integer, weights)
   total = sum(alpha)
   N = length(alpha)
 
-  function count_in_band(j)
-    return count(
-      subset ->
-        iseven(length(subset) - j) &&
-          j - 1 <
-          (length(subset) + total - 2 * sum(alpha[i] for i in subset; init=0)) <
-          j + 1,
-      powerset(1:N),
-    )
+  # A subset lands in the band of every integer j within distance one of its value, of which
+  # there are at most two, so one pass over the powerset tallies all the bands at once.
+  in_band = zeros(BigInt, N + 1)
+  for subset in powerset(1:N)
+    value = length(subset) + total - 2 * sum(alpha[i] for i in subset; init=0)
+    for j in max(0, Int(ceil(value)) - 1):min(N, Int(floor(value)) + 1)
+      iseven(length(subset) - j) && j - 1 < value < j + 1 && (in_band[j + 1] += 1)
+    end
   end
-  complement(j) = binomial(BigInt(N), j) - count_in_band(j)
+  complement(j) = binomial(BigInt(N), j) - in_band[j + 1]
   multiplicity(j) = sum(((i + 2) ÷ 2) * complement(j - i) for i in 0:j; init=BigInt(0))
 
   base = if genus == 0

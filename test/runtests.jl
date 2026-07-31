@@ -253,8 +253,13 @@ const R, x, y = hodge_ring()
     @test euler(seshadris_desingularisation(3)) == 112
     @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 5)) ==
       fano_variety_intersection_quadrics_even(2, 0)
+    @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 7)) ==
+      fano_variety_intersection_quadrics_even(3, 1)
     @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 9)) ==
       fano_variety_intersection_quadrics_even(4, 2)
+    # weights need not be uniform
+    @test moduli_parabolic_vector_bundles_rank_two(0, [1//3, 1//4, 2//5, 1//2, 3//7]) ==
+      blowup(Pn(2), 4 * point())
     @test all(quot_scheme_curve(3, n, 1) == symn(3, n) for n in 0:4)
     @test dimension(quot_scheme_curve(2, 3, 2)) == 6
   end
