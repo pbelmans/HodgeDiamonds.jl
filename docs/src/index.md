@@ -158,6 +158,11 @@ differs where Julia has a better way of saying something:
     with [`hodge_ring`](@ref).
   - Sage's `HodgeDiamondRing` and `HochschildHomologies` parent objects are gone; Julia
     needs no parents.
+  - The characteristic-2 Enriques surfaces are selected positionally,
+    `enriques("classical")`, rather than through Sage's `two=` keyword.
+  - [`blowup`](@ref) takes `codimension`, not Sage's `codim`.
+  - [`pprint`](@ref) has no `format=`: it always prints a diamond, and
+    [`polynomial`](@ref) gives the Hodge--Poincaré polynomial.
 
 ## Index
 
