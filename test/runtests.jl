@@ -307,6 +307,7 @@ const HD = HodgeDiamonds
     @test quiver_moduli(flags(5, 3), (1, 4, 3, 1)) == partial_flag_variety("A4", [2])
 
     @test_throws ArgumentError quiver_moduli([0 1; 1 0], (1, 1))
+    @test_throws ArgumentError quiver_moduli([1 1; 0 0], (1, 1))
     @test_throws ArgumentError quiver_moduli(kronecker(2), (2, 2))
   end
 

@@ -1043,7 +1043,8 @@ function _is_acyclic(adjacency::Matrix{Int})
     state[node] == 2 && return true
     state[node] = 1
     for other in 1:n
-      (node != other && !iszero(adjacency[node, other])) || continue
+      # the diagonal is included, so a loop at a vertex is a cycle like any other
+      iszero(adjacency[node, other]) && continue
       visit(other) || return false
     end
     state[node] = 2
