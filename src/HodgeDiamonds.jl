@@ -42,6 +42,7 @@ hodge_ring() = (R, x, y)
 
 include("internals.jl")
 include("diamond.jl")
+include("varieties.jl")
 
 # ── exports from diamond.jl ─────────────────────────────────────────────────────
 
@@ -67,5 +68,18 @@ export arises_from_variety,
     sym,
     symmetric_power
 export blowup, bundle, mirror
+
+# ── exports from varieties.jl ───────────────────────────────────────────────────
+
+export 𝕃, ℙ, ×, χ, χ_top, χ_y
+export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surface
+export K3, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
+export complete_intersection, cyclic_cover, hypersurface, weighted_hypersurface
+export fano_threefold,
+    fano_variety_intersection_quadrics_even,
+    fano_variety_intersection_quadrics_odd,
+    fano_variety_lines_cubic,
+    gushel_mukai
+export Mzeronbar
 
 end # module
