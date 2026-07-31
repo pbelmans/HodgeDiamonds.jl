@@ -350,22 +350,13 @@ compositions(r::Int) =
   iszero(r) ? [Int[]] : [diff([0; cuts; r]) for cuts in powerset(1:(r - 1))]
 
 "Multiplicities of the parts of a partition, as a `part => multiplicity` dictionary."
-function multiplicities(partition)
-  counts = Dict{Int,Int}()
-  for part in partition
-    counts[part] = get(counts, part, 0) + 1
-  end
-  return counts
-end
+multiplicities(partition) =
+  Dict(part => count(==(part), partition) for part in unique(partition))
 
 "Binomial coefficient allowing a negative upper argument."
-function falling_binomial(upper::Integer, lower::Integer)
-  value = BigInt(1)
-  for j in 0:(lower - 1)
-    value *= (upper - j)
-  end
-  return value ÷ factorial(BigInt(lower))
-end
+falling_binomial(upper::Integer, lower::Integer) =
+  prod((BigInt(upper - j) for j in 0:(lower - 1)); init=BigInt(1)) ÷
+  factorial(BigInt(lower))
 
 """
     accumulate_scaled!(destination, source, coefficient, shift_a, shift_b, width)
