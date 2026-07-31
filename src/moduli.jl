@@ -1108,7 +1108,6 @@ The ``k``th cut ``m(i,\\mathbf{n},k)``, equation (2.16) in [Baumann]: the tuple
 """
 function _brauer_severi_cut(datum::Tuple, i::Int, k::Int)
   e = length(datum)
-  (i in 1:e && k in 1:e) || throw(ArgumentError("indices out of range"))
   shifted = (datum[i:end]..., datum[1:(i - 1)]...)
   return shifted[(e - k + 1):end]
 end
