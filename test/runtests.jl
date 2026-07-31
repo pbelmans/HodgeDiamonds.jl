@@ -175,9 +175,9 @@ const R, x, y = hodge_ring()
 
   @testset "blowups and bundles" begin
     @test blowup(Pn(2), 6 * point()) == hypersurface(3, 2)
-    @test bundle(point(), 3) == Pn(2)
-    @test bundle(Pn(1), 2) == hypersurface(2, 2)
-    @test bundle(K3(), 1) == K3()
+    @test projective_bundle(point(), 3) == Pn(2)
+    @test projective_bundle(Pn(1), 2) == hypersurface(2, 2)
+    @test projective_bundle(K3(), 1) == K3()
     @test mirror(mirror(hypersurface(5, 3))) == hypersurface(5, 3)
   end
 

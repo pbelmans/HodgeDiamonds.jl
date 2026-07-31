@@ -744,24 +744,24 @@ function blowup(
 end
 
 """
-    bundle(X, rank)
+    projective_bundle(X, rank)
 
-Hodge diamond of a projective bundle of the given rank on `X`, applying the bundle
-formula from Hodge theory without any consistency checks.
+Hodge diamond of the projectivisation of a vector bundle of the given rank on `X`, applying
+the projective bundle formula from Hodge theory without any consistency checks.
 
 # Examples
 
 A projective bundle on a point is a projective space:
 
 ```jldoctest
-julia> bundle(point(), 3) == Pn(2)
+julia> projective_bundle(point(), 3) == Pn(2)
 true
 
-julia> bundle(Pn(1), 2) == hypersurface(2, 2)
+julia> projective_bundle(Pn(1), 2) == hypersurface(2, 2)
 true
 ```
 """
-bundle(X::HodgeDiamond, rank::Integer) =
+projective_bundle(X::HodgeDiamond, rank::Integer) =
   sum((X(i) for i in 0:(rank - 1)); init=zero(HodgeDiamond))
 
 """

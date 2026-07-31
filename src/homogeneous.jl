@@ -239,8 +239,8 @@ function horospherical(dynkin::AbstractString, parabolic_Y::Integer, parabolic_Z
     throw(ArgumentError("no horospherical varieties of type $dynkin"))
   end
 
-  return bundle(Y, total_dimension - dimension(Y) + 1) + Z -
-         bundle(Z, total_dimension - dimension(Z))
+  return projective_bundle(Y, total_dimension - dimension(Y) + 1) + Z -
+         projective_bundle(Z, total_dimension - dimension(Z))
 end
 
 """

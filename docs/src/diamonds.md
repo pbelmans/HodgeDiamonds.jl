@@ -55,7 +55,7 @@ is_serre_symmetric
 
 ```@docs
 blowup
-bundle
+projective_bundle
 mirror
 ```
 

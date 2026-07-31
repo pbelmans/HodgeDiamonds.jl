@@ -70,7 +70,7 @@ export arises_from_variety,
   signature,
   sym,
   symmetric_power
-export blowup, bundle, mirror
+export blowup, mirror, projective_bundle
 
 # ── exports from varieties.jl ───────────────────────────────────────────────────
 
