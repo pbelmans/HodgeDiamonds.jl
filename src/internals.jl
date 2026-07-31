@@ -7,6 +7,10 @@
 # Hodge--Poincaré polynomial of a variety, hence of bidegree at most
 # ``(\dim X, \dim X)``. So we work with polynomials truncated at ``N = \dim X``,
 # which is exact rather than approximate, stored densely.
+#
+# The `*_CACHE` dictionaries here and in the other files memoise pure functions of small
+# integers. They are plain `Dict`s, so none of this is safe to call from several threads at
+# once; a lock per cache is the fix if that ever matters.
 
 # ── a machine integer that refuses to wrap ───────────────────────────────────────
 
@@ -195,8 +199,7 @@ function series_multiply(first::Vector{T}, second::Vector{T}, N::Int) where {T<:
   product = zeros(T, N + 1)
   @inbounds for i in eachindex(first)
     iszero(first[i]) && continue
-    for j in eachindex(second)
-      i + j - 1 <= N + 1 || continue
+    for j in 1:min(length(second), N + 2 - i)
       iszero(second[j]) || (product[i + j - 1] += first[i] * second[j])
     end
   end

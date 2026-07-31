@@ -1124,7 +1124,7 @@ function _brauer_severi_cut(datum::Tuple, i::Int, k::Int)
   return shifted[(e - k + 1):end]
 end
 
-const BRAUER_SEVERI_CACHE = Dict{Tuple,HodgeDiamond}()
+const BRAUER_SEVERI_CACHE = Dict{Tuple{Vararg{Int}},HodgeDiamond}()
 
 """
 Class of the top Artin auxiliary variety ``V_{1,\\mathbf{n},e}`` via Proposition 2.4.2 in
