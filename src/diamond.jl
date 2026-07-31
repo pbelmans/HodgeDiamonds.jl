@@ -917,7 +917,9 @@ end
 Base.show(io::IO, ::MIME"text/plain", X::HodgeDiamond) = pprint(io, X)
 
 function Base.show(io::IO, X::HodgeDiamond)
-  return print(io, "Hodge diamond of size $(_top_degree(X) + 1) and dimension $(dimension(X))")
+  return print(
+    io, "Hodge diamond of size $(_top_degree(X) + 1) and dimension $(dimension(X))"
+  )
 end
 
 """
