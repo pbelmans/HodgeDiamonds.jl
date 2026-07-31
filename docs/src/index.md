@@ -1,3 +1,7 @@
+```@meta
+DocTestSetup = :(using AbstractAlgebra, HodgeDiamonds)
+```
+
 # HodgeDiamonds.jl
 
 A tool to work with Hodge diamonds, with many varieties and constructions built in. This
@@ -39,7 +43,10 @@ threefold has a mirror Calabi--Yau threefold, which should imply that their Hodg
 are transpositions. The first instance of this is the quintic threefold and its mirror:
 
 ```jldoctest
-julia> hypersurface(5, 3)
+hypersurface(5, 3)
+
+# output
+
                  1
             0         0
         0         1         0
@@ -47,8 +54,13 @@ julia> hypersurface(5, 3)
         0         1         0
             0         0
                  1
+```
 
-julia> mirror(hypersurface(5, 3))
+```jldoctest
+mirror(hypersurface(5, 3))
+
+# output
+
                  1
             0         0
         0       101       0
@@ -73,7 +85,10 @@ julia> euler(X × X)
 Pretty print the Hodge diamond of the Hilbert square of a K3 surface:
 
 ```jldoctest
-julia> hilbn(K3(), 2)
+hilbn(K3(), 2)
+
+# output
+
                     1
                0         0
           1        21        1

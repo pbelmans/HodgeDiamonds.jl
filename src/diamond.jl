@@ -38,14 +38,19 @@ variety.
 The Hodge diamond of a K3 surface:
 
 ```jldoctest
-julia> S = from_matrix([1 0 1; 0 20 0; 1 0 1])
+from_matrix([1 0 1; 0 20 0; 1 0 1])
+
+# output
+
           1
       0        0
   1       20       1
       0        0
           1
+```
 
-julia> S == K3()
+```jldoctest
+julia> from_matrix([1 0 1; 0 20 0; 1 0 1]) == K3()
 true
 ```
 """
@@ -150,9 +155,9 @@ julia> K3()[1, 1]
 
 julia> K3()[2]
 3-element Vector{BigInt}:
- 1
- 0
- 1
+  1
+ 20
+  1
 ```
 """
 function Base.getindex(X::HodgeDiamond, p::Integer, q::Integer)
@@ -756,14 +761,17 @@ The mirror Hodge diamond.
 The mirror to a quintic threefold:
 
 ```jldoctest
-julia> mirror(hypersurface(5, 3))
-                 1
-            0         0
-        0       101       0
-    1       1         1       1
-        0       101       0
-            0         0
-                 1
+mirror(hypersurface(5, 3))
+
+# output
+
+               1
+          0         0
+      0       101       0
+  1       1         1       1
+      0       101       0
+          0         0
+               1
 ```
 """
 function mirror(X::HodgeDiamond)
@@ -878,7 +886,10 @@ julia> pprint(Pn(2) * curve(3); hide_zeroes = true)
 Only print the top-left quarter:
 
 ```jldoctest
-julia> pprint(Pn(2) * curve(3); quarter = true)
+pprint(Pn(2) * curve(3); quarter = true)
+
+# output
+
               1
           3
       0       2
@@ -1032,7 +1043,7 @@ The Hochschild--Poincaré Laurent polynomial.
 
 ```jldoctest
 julia> polynomial(from_list([1, 0, 22, 0, 1]))
-t^-2 + 22 + t^2
+t^2 + 22 + t^-2
 ```
 """
 function AbstractAlgebra.polynomial(h::HochschildHomology)

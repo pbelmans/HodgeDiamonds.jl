@@ -1,3 +1,7 @@
+```@meta
+DocTestSetup = :(using AbstractAlgebra, HodgeDiamonds)
+```
+
 # Hochschild homology
 
 ```@docs

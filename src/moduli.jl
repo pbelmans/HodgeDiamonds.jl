@@ -644,8 +644,9 @@ For weight ``1/2`` in ``2g+3`` points on ``\\mathbb{P}^1`` we recover a Fano var
 linear subspaces on an intersection of two quadrics:
 
 ```jldoctest
-julia> moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 5)) ==
-       fano_variety_intersection_quadrics_even(2, 0)
+julia> weights = fill(1//2, 5);
+
+julia> moduli_parabolic_vector_bundles_rank_two(0, weights) == fano_variety_intersection_quadrics_even(2, 0)
 true
 ```
 """
@@ -931,7 +932,10 @@ true
 A degree-2 order over an elliptic curve, ramified in three points:
 
 ```jldoctest
-julia> brauer_severi(1, 2, [(1, 1), (1, 1), (1, 1)])
+brauer_severi(1, 2, [(1, 1), (1, 1), (1, 1)])
+
+# output
+
           1
       1       1
   0       5       0

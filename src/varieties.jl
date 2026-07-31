@@ -39,14 +39,17 @@ julia> lefschetz()
 Powers give the higher-dimensional affine spaces:
 
 ```jldoctest
-julia> 𝕃^3
-                      0
-                  0       0
-              0       0       0
-          0       0       0       0
-              0       0       0
-                  0       0
-                      1
+𝕃^3
+
+# output
+
+              0
+          0       0
+      0       0       0
+  0       0       0       0
+      0       0       0
+          0       0
+              1
 ```
 """
 lefschetz() = point()(1)
@@ -141,13 +144,18 @@ Macdonald, should exist.
 # Examples
 
 ```jldoctest
-julia> symmetric_power(2, 3)
+symmetric_power(2, 3)
+
+# output
+
           1
       3        3
   3       10       3
       3        3
           1
+```
 
+```jldoctest
 julia> all(symmetric_power(1, genus) == curve(genus) for genus in 0:9)
 true
 
@@ -194,7 +202,10 @@ dimension `genus`.
 # Examples
 
 ```jldoctest
-julia> jacobian(3)
+jacobian(3)
+
+# output
+
               1
           3       3
       3       9       3
@@ -202,7 +213,9 @@ julia> jacobian(3)
       3       9       3
           3       3
               1
+```
 
+```jldoctest
 julia> jacobian(0) == point()
 true
 
@@ -380,13 +393,18 @@ Hodge diamond of a K3 surface.
 # Examples
 
 ```jldoctest
-julia> K3()
+K3()
+
+# output
+
           1
       0        0
   1       20       1
       0        0
           1
+```
 
+```jldoctest
 julia> K3() == hypersurface(4, 2)
 true
 ```
@@ -407,28 +425,46 @@ Enriques surface, whose invariants are given in Proposition 1.4.2 of [MR0986969]
 # Examples
 
 ```jldoctest
-julia> enriques()
+enriques()
+
+# output
+
           1
       0        0
   0       10       0
       0        0
           1
+```
 
-julia> enriques("classical")
+```jldoctest
+enriques("classical")
+
+# output
+
           1
       0        1
   0       12       0
       1        0
           1
+```
 
-julia> enriques("singular")
+```jldoctest
+enriques("singular")
+
+# output
+
           1
       1        0
   1       10       1
       0        1
           1
+```
 
-julia> enriques("supersingular")
+```jldoctest
+enriques("supersingular")
+
+# output
+
           1
       1        1
   1       12       1
@@ -459,8 +495,13 @@ surface:
 ```jldoctest
 julia> ruled(0) == hypersurface(2, 2)
 true
+```
 
-julia> ruled(5)
+```jldoctest
+ruled(5)
+
+# output
+
           1
       5       5
   0       2       0
