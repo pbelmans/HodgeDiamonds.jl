@@ -189,6 +189,8 @@ Base.:(==)(g::HochschildHomology, h::HochschildHomology) = _trimmed(g) == _trimm
 Base.hash(h::HochschildHomology, u::UInt) = hash(_trimmed(h), hash(:HochschildHomology, u))
 Base.zero(::Type{HochschildHomology}) = HochschildHomology([0])
 Base.one(::Type{HochschildHomology}) = HochschildHomology([1])
+Base.zero(::HochschildHomology) = zero(HochschildHomology)
+Base.one(::HochschildHomology) = one(HochschildHomology)
 
 """
     symmetric_power(h::HochschildHomology, k)
