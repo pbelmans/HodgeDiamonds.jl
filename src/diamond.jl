@@ -435,9 +435,16 @@ A Calabi--Yau variety has maximal level:
 julia> all(level(hypersurface(n + 2, n)) == n for n in 0:9)
 true
 ```
+
+The empty space has level zero:
+
+```jldoctest
+julia> level(zero(HodgeDiamond))
+0
+```
 """
 level(X::HodgeDiamond) =
-  maximum(abs(exponents[1] - exponents[2]) for exponents in exponent_vectors(X.f))
+  maximum((abs(exponents[1] - exponents[2]) for exponents in exponent_vectors(X.f)); init=0)
 
 """
     betti(X)
