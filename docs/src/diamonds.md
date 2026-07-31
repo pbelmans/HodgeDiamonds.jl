@@ -23,6 +23,7 @@ Base.:-(::HodgeDiamond, ::HodgeDiamond)
 Base.:*(::HodgeDiamond, ::HodgeDiamond)
 Base.:^(::HodgeDiamond, ::Integer)
 Base.getindex(::HodgeDiamond, ::Integer, ::Integer)
+AbstractAlgebra.evaluate(::HodgeDiamond, ::Any, ::Any)
 ```
 
 ## Invariants

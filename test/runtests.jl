@@ -56,7 +56,9 @@ const R, x, y = hodge_ring()
     @test X(3)(-3) == X
     @test lefschetz_power(X(4)) == 4
     @test_throws ArgumentError X(-1)
-    @test Pn(10)(1, 1) == 11
+    @test evaluate(Pn(10), 1, 1) == 11
+    @test evaluate(K3(), -1, -1) == euler(K3())
+    @test evaluate(K3(), 0, -1) == holomorphic_euler(K3())
     @test dimension(lefschetz()) == 0
     @test dimension(zero(HodgeDiamond)) == -1
     # the dimension is symmetric in p and q, not read off the y-degree alone

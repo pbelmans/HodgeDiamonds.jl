@@ -254,11 +254,11 @@ Base.iszero(X::HodgeDiamond) = is_zero(X.f)
 
 """
     X(i)
-    X(a, b)
 
-With one integer argument, twist by the `i`th power of the Lefschetz class. Negative
-values untwist, up to the available power. With two arguments, evaluate the
-Hodge--Poincaré polynomial.
+Twist by the `i`th power of the Lefschetz class, so `X(i)` is `X * 𝕃^i`. Negative values
+untwist, up to the available power.
+
+To specialise the Hodge--Poincaré polynomial instead, use [`evaluate`](@ref).
 
 # Examples
 
@@ -271,13 +271,6 @@ true
 julia> Pn(10) == sum(point()(i) for i in 0:10)
 true
 ```
-
-Evaluating gives specialisations such as the Euler characteristic:
-
-```jldoctest
-julia> Pn(10)(1, 1)
-11
-```
 """
 function (X::HodgeDiamond)(i::Integer)
   i >= -lefschetz_power(X) ||
@@ -286,7 +279,25 @@ function (X::HodgeDiamond)(i::Integer)
   return HodgeDiamond(i >= 0 ? X.f * twist : divexact(X.f, twist))
 end
 
-(X::HodgeDiamond)(a, b) = evaluate(X.f, [a, b])
+"""
+    evaluate(X::HodgeDiamond, a, b)
+
+Evaluate the Hodge--Poincaré polynomial at ``x=a`` and ``y=b``.
+
+The interesting specialisations have names of their own: [`euler`](@ref) is the value at
+``(-1,-1)``, [`holomorphic_euler`](@ref) at ``(0,-1)``, and [`hirzebruch`](@ref) at
+``(-1,y)``.
+
+# Examples
+
+Evaluating at ``(1,1)`` sums all the Hodge numbers:
+
+```jldoctest
+julia> evaluate(Pn(10), 1, 1)
+11
+```
+"""
+AbstractAlgebra.evaluate(X::HodgeDiamond, a, b) = evaluate(X.f, [a, b])
 
 # ── invariants ──────────────────────────────────────────────────────────────────
 
@@ -667,7 +678,7 @@ julia> hirzebruch(hilbn(K3(), 2))
 3*y^4 - 42*y^3 + 234*y^2 - 42*y + 3
 ```
 """
-hirzebruch(X::HodgeDiamond) = evaluate(X.f, [Ry(-1), _y])
+hirzebruch(X::HodgeDiamond) = evaluate(X, Ry(-1), _y)
 
 """
     homological_unit(X)
