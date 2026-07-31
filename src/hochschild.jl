@@ -47,9 +47,12 @@ HochschildHomology(n::Integer) = HochschildHomology([n])
 
 function HochschildHomology(f::LaurentPolyRingElem)
   iszero(f) && return HochschildHomology([0])
-  lowest = AbstractAlgebra.Generic.trail_degree(f)
-  highest = AbstractAlgebra.Generic.lead_degree(f)
-  return HochschildHomology([BigInt(coeff(f, i)) for i in lowest:highest])
+  # the range has to be symmetric about zero, so that a polynomial violating Serre duality
+  # is rejected rather than silently reread as a shifted one
+  n = max(
+    abs(AbstractAlgebra.Generic.trail_degree(f)), abs(AbstractAlgebra.Generic.lead_degree(f))
+  )
+  return HochschildHomology([BigInt(coeff(f, i)) for i in (-n):n])
 end
 
 """

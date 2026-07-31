@@ -154,6 +154,11 @@ const R, x, y = hodge_ring()
     @test repr(h) == "Hochschild homology vector of dimension 2"
     @test_throws ArgumentError HochschildHomology([1, 2])
     @test_throws ArgumentError HochschildHomology([1, 0, 2])
+    @test HochschildHomology(zero(HD.Rt)) == zero(HochschildHomology)
+    # a Laurent polynomial violating Serre duality has to be rejected, not reread as a
+    # shifted one that happens to be symmetric
+    @test_throws ArgumentError HochschildHomology(HD.t^3)
+    @test_throws ArgumentError HochschildHomology(HD.t^2 + 1)
   end
 
   @testset "curves, surfaces and abelian varieties" begin
