@@ -43,6 +43,7 @@ hodge_ring() = (R, x, y)
 include("internals.jl")
 include("diamond.jl")
 include("varieties.jl")
+include("homogeneous.jl")
 
 # ── exports from diamond.jl ─────────────────────────────────────────────────────
 
@@ -81,5 +82,16 @@ export fano_threefold,
     fano_variety_lines_cubic,
     gushel_mukai
 export Mzeronbar
+
+# ── exports from homogeneous.jl ─────────────────────────────────────────────────
+
+export generalised_grassmannian,
+    grassmannian,
+    horospherical,
+    lagrangian_grassmannian,
+    odd_symplectic_grassmannian,
+    orthogonal_grassmannian,
+    partial_flag_variety,
+    symplectic_grassmannian
 
 end # module
