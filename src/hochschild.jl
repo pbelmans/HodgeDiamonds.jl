@@ -206,47 +206,27 @@ function symmetric_power(h::HochschildHomology, k::Integer)
   iszero(k) && return one(HochschildHomology)
   n = dimension(h)
   terms = [(i, h[i]) for i in (-n):n if !iszero(h[i])]
-  total = Dict{Int,BigInt}()
-  for partition in partitions(Int(k))
-    factor = Dict(0 => BigInt(1))
-    # only the multiplicities of the parts play a role, not the parts themselves
-    for count in values(multiplicities(partition))
-      factor = _convolve(factor, _symmetric_summand(terms, count))
-    end
-    mergewith!(+, total, factor)
-  end
-  reach = maximum((abs(exponent) for (exponent, _) in total); init=0)
-  return HochschildHomology([get(total, i, BigInt(0)) for i in (-reach):reach])
-end
-
-function _convolve(first::Dict{Int,BigInt}, second::Dict{Int,BigInt})
-  product = Dict{Int,BigInt}()
-  for (exponent, coefficient) in first, (other_exponent, other_coefficient) in second
-    total_exponent = exponent + other_exponent
-    product[total_exponent] =
-      get(product, total_exponent, BigInt(0)) + coefficient * other_coefficient
-  end
-  return product
+  # only the multiplicities of the parts play a role, not the parts themselves
+  return HochschildHomology(
+    sum(
+      prod(_symmetric_summand(terms, count) for count in values(multiplicities(partition)))
+      for partition in partitions(Int(k))
+    ),
+  )
 end
 
 # The object C^{(\lambda)} of Polishchuk--Van den Bergh: the k-th symmetric power of a
 # graded vector space, obtained by splitting off one graded piece at a time.
 function _symmetric_summand(terms::Vector{Tuple{Int,BigInt}}, k::Int)
-  isempty(terms) && return Dict{Int,BigInt}()
+  isempty(terms) && return zero(Rt)
   if length(terms) == 1
-    degree, thickness = terms[1]
-    coefficient = falling_binomial(iseven(degree) ? thickness + k - 1 : thickness, k)
-    return iszero(coefficient) ? Dict{Int,BigInt}() : Dict(k * degree => coefficient)
+    degree, thickness = only(terms)
+    return falling_binomial(iseven(degree) ? thickness + k - 1 : thickness, k) *
+           t^(k * degree)
   end
-  total = Dict{Int,BigInt}()
-  for j in 0:k
-    mergewith!(
-      +,
-      total,
-      _convolve(_symmetric_summand(terms[1:1], j), _symmetric_summand(terms[2:end], k - j)),
-    )
-  end
-  return total
+  return sum(
+    _symmetric_summand(terms[1:1], j) * _symmetric_summand(terms[2:end], k - j) for j in 0:k
+  )
 end
 
 """
