@@ -369,8 +369,6 @@ function complete_intersection(degrees, dimension::Integer)
   M = zero_coefficients(N + 1)
   for i in 0:N
     M[i + 1, i + 1] = 1
-  end
-  for i in 0:N
     M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
   end
   return HodgeDiamond(M; from_variety=true)
@@ -624,8 +622,6 @@ function weighted_hypersurface(degree::Integer, weights)
   M = zero_coefficients(n)
   for i in 0:(n - 1)
     M[i + 1, i + 1] = 1
-  end
-  for i in 0:(n - 1)
     M[i + 1, n - i] = hodge(i, n - i - 1)
   end
   return HodgeDiamond(M; from_variety=true)
