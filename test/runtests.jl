@@ -380,41 +380,16 @@ const HD = HodgeDiamonds
     square = HD.multiply_truncated(HD.dense_one(3), HD.dense_one(3), 3)
     @test square == HD.dense_one(3)
 
-    # Weyl group degrees of induced sub-diagrams, checked against Semisimple
+    # parse_dynkin normalises the degenerate low-rank labels Semisimple rejects
     using Semisimple: Semisimple
     degrees(type) = Semisimple.degrees_fundamental_invariants(type)
-    @test degrees(HD.levi_type(HD.parse_dynkin("A5"), [2, 3, 4, 5])) ==
-      degrees(Semisimple.TypeA{4}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("A5"), [1, 2, 4, 5])) == degrees(
-      Semisimple.ProductDynkinType(Semisimple.TypeA{2}(), Semisimple.TypeA{2}())
-    )
-    @test degrees(HD.levi_type(HD.parse_dynkin("E8"), [1, 3, 4, 5, 6, 7, 8])) ==
-      degrees(Semisimple.TypeA{7}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("E8"), [2, 3, 4, 5, 6, 7, 8])) ==
-      degrees(Semisimple.TypeD{7}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("E8"), [1, 2, 3, 4, 5, 6, 7])) ==
-      degrees(Semisimple.TypeE{7}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("F4"), [1, 2, 3, 4])) ==
-      degrees(Semisimple.TypeF4())
-    @test degrees(HD.levi_type(HD.parse_dynkin("F4"), [2, 3])) ==
-      degrees(Semisimple.TypeB{2}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("F4"), [1, 2])) ==
-      degrees(Semisimple.TypeA{2}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("D6"), [1, 2, 3, 4, 5, 6])) ==
-      degrees(Semisimple.TypeD{6}())
-    @test degrees(HD.levi_type(HD.parse_dynkin("D6"), [5, 6])) == degrees(
-      Semisimple.ProductDynkinType(Semisimple.TypeA{1}(), Semisimple.TypeA{1}())
-    )
-    @test degrees(HD.levi_type(HD.parse_dynkin("G2"), [1, 2])) ==
-      degrees(Semisimple.TypeG2())
-    @test degrees(HD.levi_type(HD.parse_dynkin("B4"), [2, 3, 4])) ==
-      degrees(Semisimple.TypeB{3}())
     @test HD.parse_dynkin("C1") == Semisimple.TypeA{1}()
     @test HD.parse_dynkin("B1") == Semisimple.TypeA{1}()
     @test HD.parse_dynkin("D3") == Semisimple.TypeD{3}()
+    @test HD.parse_dynkin("E8") == Semisimple.TypeE{8}()
     @test degrees(HD.parse_dynkin("D2")) == [2, 2]
     @test_throws ArgumentError HD.parse_dynkin("H4")
     @test_throws ArgumentError HD.parse_dynkin("A0")
-    @test_throws ArgumentError HD.levi_type(HD.parse_dynkin("A3"), Int[])
+    @test_throws ArgumentError HD.parse_dynkin("F3")
   end
 end

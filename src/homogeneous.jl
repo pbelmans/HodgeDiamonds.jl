@@ -3,9 +3,8 @@
 #     ∏_i (1 - q^{d_i}) / ∏_j (1 - q^{e_j})
 #
 # with ``d_i`` the degrees of the fundamental invariants of the Weyl group of ``G`` and
-# ``e_j`` those of the Levi factor. Semisimple.jl supplies the degrees for simple and for
-# product Dynkin types; a Levi factor is exactly a product type, so all that is left is to
-# recognise the sub-diagram induced on a set of vertices.
+# ``e_j`` those of the Levi factor. Semisimple.jl supplies both the degrees and the
+# sub-diagram induced on a set of vertices, so nothing here has to classify diagrams.
 
 """
     parse_dynkin(label)
@@ -13,8 +12,8 @@
 Parse a Dynkin type written as usual, such as `"A5"` or `"E8"`, into the
 corresponding Semisimple.jl type.
 
-Semisimple.jl rejects the degenerate labels of low rank, so those are normalised here:
-``\\mathrm{B}_1=\\mathrm{C}_1=\\mathrm{A}_1`` and
+`Semisimple.parse_dynkin_type` does the work, but it rejects the degenerate labels of low
+rank, so those are normalised here: ``\\mathrm{B}_1=\\mathrm{C}_1=\\mathrm{A}_1`` and
 ``\\mathrm{D}_2=\\mathrm{A}_1\\times\\mathrm{A}_1``. Small orthogonal and symplectic
 Grassmannians reach these.
 
@@ -34,122 +33,14 @@ function parse_dynkin(label::AbstractString)
   rank = tryparse(Int, label[2:end])
   (rank === nothing || rank < 1) && throw(ArgumentError("unknown Dynkin type $label"))
   letter in ('A', 'B', 'C') && rank == 1 && return Semisimple.TypeA{1}()
-  letter == 'A' && return Semisimple.TypeA{rank}()
-  letter == 'B' && return Semisimple.TypeB{rank}()
-  letter == 'C' && return Semisimple.TypeC{rank}()
-  if letter == 'D'
-    rank == 2 && return Semisimple.ProductDynkinType(
-      Semisimple.TypeA{1}(), Semisimple.TypeA{1}()
-    )
-    return Semisimple.TypeD{rank}()
-  end
-  letter == 'E' && return Semisimple.TypeE{rank}()
-  letter == 'F' && rank == 4 && return Semisimple.TypeF4()
-  letter == 'G' && rank == 2 && return Semisimple.TypeG2()
-  throw(ArgumentError("unknown Dynkin type $label"))
+  letter == 'D' &&
+    rank == 2 &&
+    return Semisimple.ProductDynkinType(Semisimple.TypeA{1}(), Semisimple.TypeA{1}())
+  return Semisimple.parse_dynkin_type(label)()
 end
 
 # Number of vertices of a Dynkin diagram given by its label.
 _dynkin_rank(label::AbstractString) = parse(Int, label[2:end])
-
-"""
-    levi_type(dynkin_type, vertices)
-
-The Dynkin type of the sub-diagram of `dynkin_type` induced on `vertices`, in Bourbaki
-numbering, as a simple or product type.
-
-Types ``\\mathrm{B}_k`` and ``\\mathrm{C}_k`` have the same Weyl group degrees, so the
-classification below never has to tell them apart, which is what keeps it short.
-"""
-function levi_type(dynkin_type, vertices)
-  cartan = Semisimple.cartan_matrix(dynkin_type)
-  nodes = sort(collect(vertices))
-  isempty(nodes) && throw(ArgumentError("the vertex set needs to be non-empty"))
-  adjacent(a, b) = a != b && !iszero(cartan[a, b])
-  bond(a, b) = max(abs(cartan[a, b]), abs(cartan[b, a]))
-
-  components = Vector{Vector{Int}}()
-  unvisited = Set(nodes)
-  while !isempty(unvisited)
-    queue = [first(unvisited)]
-    delete!(unvisited, queue[1])
-    component = Int[]
-    while !isempty(queue)
-      current = pop!(queue)
-      push!(component, current)
-      for candidate in nodes
-        if candidate in unvisited && adjacent(current, candidate)
-          delete!(unvisited, candidate)
-          push!(queue, candidate)
-        end
-      end
-    end
-    push!(components, sort(component))
-  end
-
-  types = [_classify_component(component, adjacent, bond) for component in components]
-  return length(types) == 1 ? types[1] : Semisimple.ProductDynkinType(types...)
-end
-
-function _classify_component(component, adjacent, bond)
-  rank = length(component)
-  rank == 1 && return Semisimple.TypeA{1}()
-
-  valence = Dict(
-    node => count(other -> adjacent(node, other), component) for node in component
-  )
-  strongest = maximum(
-    bond(node, other) for node in component for
-    other in component if adjacent(node, other)
-  )
-
-  strongest == 3 && return Semisimple.TypeG2()
-
-  if strongest == 2
-    rank == 2 && return Semisimple.TypeB{2}()
-    double = first(
-      (node, other) for node in component for
-      other in component if adjacent(node, other) && bond(node, other) == 2
-    )
-    # F4 is the only diagram whose double bond sits between two interior nodes
-    rank == 4 &&
-      valence[double[1]] == 2 &&
-      valence[double[2]] == 2 &&
-      return Semisimple.TypeF4()
-    return Semisimple.TypeB{rank}()
-  end
-
-  branch = findfirst(node -> valence[node] == 3, component)
-  branch === nothing && return Semisimple.TypeA{rank}()
-
-  node = component[branch]
-  lengths = sort([
-    _branch_length(node, neighbour, component, adjacent) for
-    neighbour in component if adjacent(node, neighbour)
-  ])
-  lengths == [1, 1, rank - 3] && return Semisimple.TypeD{rank}()
-  lengths == [1, 2, 2] && return Semisimple.TypeE{6}()
-  lengths == [1, 2, 3] && return Semisimple.TypeE{7}()
-  lengths == [1, 2, 4] && return Semisimple.TypeE{8}()
-  throw(ArgumentError("unrecognised Dynkin sub-diagram on $component"))
-end
-
-# Number of vertices on the branch leaving `node` through `neighbour`.
-function _branch_length(node, neighbour, component, adjacent)
-  previous, current, steps = node, neighbour, 1
-  while true
-    following = nothing
-    for candidate in component
-      if candidate != previous && adjacent(current, candidate)
-        following = candidate
-        break
-      end
-    end
-    following === nothing && return steps
-    previous, current = current, following
-    steps += 1
-  end
-end
 
 # ∏_i (1 + q + … + q^{d_i - 1}), the numerator of a Weyl group Poincaré polynomial
 _weyl_poincare(degrees) = prod((sum(q^i for i in 0:(d - 1)) for d in degrees); init=one(Rq))
@@ -189,7 +80,9 @@ function partial_flag_variety(dynkin::AbstractString, vertices)
     one(Rq)
   else
     _weyl_poincare(
-      Semisimple.degrees_fundamental_invariants(levi_type(dynkin_type, vertices))
+      Semisimple.degrees_fundamental_invariants(
+        Semisimple.sub_dynkin_type(dynkin_type, vertices)
+      ),
     )
   end
   poincare = divexact(numerator, denominator)
