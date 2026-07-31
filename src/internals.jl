@@ -127,7 +127,6 @@ function polynomial_to_dense(::Type{T}, f::HPoly, N::Int) where {T<:Number}
   end
   return dense
 end
-polynomial_to_dense(f::HPoly, N::Int) = polynomial_to_dense(BigInt, f, N)
 
 # ── truncated univariate series in the Lefschetz class ``L = xy`` ────────────────
 #
@@ -186,12 +185,6 @@ function series_inverse(series::Vector{T}, N::Int) where {T<:Number}
   return inverse
 end
 
-"""
-    multiply_by_lefschetz_series(dense, series, N)
-
-Multiply the dense bivariate polynomial by `series` evaluated at ``L = xy``, truncated to
-bidegree `(N, N)`.
-"""
 # `BigInt` arithmetic allocates per operation, and a fresh output matrix is tens of
 # thousands of allocations besides. These specialisations follow AbstractAlgebra's
 # convention for unsafe operators: the mutated object comes first, so a caller holding a
@@ -292,11 +285,12 @@ function multiply_by_lefschetz_series!(
   return product
 end
 
-multiply_by_lefschetz_series(dense::Matrix{BigInt}, series::Vector{BigInt}, N::Int) =
-  multiply_by_lefschetz_series!(
-    zero_coefficients(BigInt, N + 1), dense, series, N, BigInt()
-  )
+"""
+    multiply_by_lefschetz_series(dense, series, N)
 
+Multiply the dense bivariate polynomial by `series` evaluated at ``L = xy``, truncated to
+bidegree `(N, N)`.
+"""
 function multiply_by_lefschetz_series(
   dense::Matrix{T}, series::Vector{T}, N::Int
 ) where {T<:Number}
@@ -378,20 +372,9 @@ end
 
 Add `coefficient * source` into `destination`, shifted by `(shift_a, shift_b)`.
 
-The `BigInt` method accumulates through GMP in place, so the innermost loop of Göttsche's
-product does not allocate two integers per term.
+The accumulation goes through GMP in place, so the innermost loop of Göttsche's product does
+not allocate two integers per term.
 """
-function accumulate_scaled!(
-  destination::Matrix{T}, source::Matrix{T}, coefficient::T, shift_a, shift_b, width
-) where {T<:Number}
-  @inbounds for j in 1:width, i in 1:width
-    value = source[i, j]
-    iszero(value) && continue
-    destination[i + shift_a, j + shift_b] += coefficient * value
-  end
-  return destination
-end
-
 function accumulate_scaled!(
   destination::Matrix{BigInt},
   source::Matrix{BigInt},
