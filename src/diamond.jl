@@ -477,12 +477,11 @@ julia> [betti(hilbn(K3(), n))[3] for n in 2:9]
 ```
 """
 function betti(X::HodgeDiamond)
-  d = _top_degree(X)
-  M = Matrix(X)
-  return [
-    sum((M[j + 1, i - j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
-    i in 0:(2d)
-  ]
+  numbers = zeros(BigInt, 2 * _top_degree(X) + 1)
+  for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+    numbers[exponents[1] + exponents[2] + 1] += BigInt(coefficient)
+  end
+  return numbers
 end
 
 """
@@ -574,8 +573,13 @@ julia> signature(K3())
 function signature(X::HodgeDiamond)
   arises_from_variety(X) ||
     throw(ArgumentError("the signature needs a compact Kähler manifold"))
-  d = _top_degree(X)
-  return sum((-1)^p * X[p, q] for p in 0:d, q in 0:d)
+  return sum(
+    (
+      (-1)^exponents[1] * BigInt(coefficient) for
+      (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+    );
+    init=BigInt(0),
+  )
 end
 
 """
@@ -609,10 +613,13 @@ julia> [euler(hilbn(K3(), n)) for n in 0:5]
  176256
 ```
 """
-function euler(X::HodgeDiamond)
-  numbers = betti(X)
-  return sum(((-1)^(i - 1) * numbers[i] for i in eachindex(numbers)); init=BigInt(0))
-end
+euler(X::HodgeDiamond) = sum(
+  (
+    (-1)^(exponents[1] + exponents[2]) * BigInt(coefficient) for
+    (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+  );
+  init=BigInt(0),
+)
 
 """
     holomorphic_euler(X)
@@ -676,7 +683,7 @@ hirzebruch(X::HodgeDiamond) = evaluate(X, Ry(-1), _y)
 
 Dimensions of ``\\mathrm{H}^\\bullet(X,\\mathcal{O}_X)``, a notion introduced by Abuaf.
 """
-homological_unit(X::HodgeDiamond) = Matrix(X)[1, :]
+homological_unit(X::HodgeDiamond) = [X[0, q] for q in 0:_top_degree(X)]
 
 """
     hochschild(X)
@@ -694,11 +701,12 @@ julia> hochschild(K3())
 """
 function hochschild(X::HodgeDiamond)
   d = _top_degree(X)
-  M = Matrix(X)
-  return HochschildHomology([
-    sum((M[d - i + j + 1, j + 1] for j in max(0, i - d):min(i, d)); init=BigInt(0)) for
-    i in 0:(2d)
-  ])
+  # HH_{q - p} collects the diagonal of the Hodge diamond through h^{p,q}
+  dimensions = zeros(BigInt, 2d + 1)
+  for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+    dimensions[exponents[2] - exponents[1] + d + 1] += BigInt(coefficient)
+  end
+  return HochschildHomology(dimensions)
 end
 
 """
