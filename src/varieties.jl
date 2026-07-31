@@ -341,8 +341,11 @@ julia> [euler(complete_intersection([2, 2], n)) for n in 0:9]
   0
 ```
 """
+complete_intersection(degree::Integer, dimension::Integer) =
+  complete_intersection([degree], dimension)
+
 function complete_intersection(degrees, dimension::Integer)
-  multidegree = degrees isa Integer ? [degrees] : collect(degrees)
+  multidegree = collect(degrees)
   N = Int(dimension)
 
   product = dense_one(N)
@@ -594,8 +597,11 @@ julia> middle(weighted_hypersurface(5, [1, 1, 1, 2]))
   1
 ```
 """
+weighted_hypersurface(degree::Integer, n::Integer) =
+  weighted_hypersurface(degree, fill(1, n + 1))
+
 function weighted_hypersurface(degree::Integer, weights)
-  W = weights isa Integer ? fill(1, weights + 1) : collect(weights)
+  W = collect(weights)
   n = length(W) - 1
   total_weight = sum(W)
   precision = max(0, n * degree)
@@ -653,9 +659,11 @@ julia> cyclic_cover(6, 2, 3) == fano_threefold(1, 1)
 true
 ```
 """
+cyclic_cover(ramification_degree::Integer, cover_degree::Integer, n::Integer) =
+  cyclic_cover(ramification_degree, cover_degree, fill(1, n + 1))
+
 function cyclic_cover(ramification_degree::Integer, cover_degree::Integer, weights)
-  W = weights isa Integer ? fill(1, weights + 1) : collect(weights)
-  push!(W, ramification_degree ÷ cover_degree)
+  W = vcat(collect(weights), ramification_degree ÷ cover_degree)
   return weighted_hypersurface(ramification_degree, W)
 end
 
