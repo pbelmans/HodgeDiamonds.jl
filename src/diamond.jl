@@ -631,9 +631,17 @@ true
 julia> all(holomorphic_euler(K3n(n)) == n + 1 for n in 0:4)
 true
 ```
+
+It is the alternating sum of [`homological_unit`](@ref), so it can differ from the
+alternating sum of the ``\\mathrm{h}^{i,0}`` when Hodge symmetry fails:
+
+```jldoctest
+julia> holomorphic_euler(hopf())
+0
+```
 """
 holomorphic_euler(X::HodgeDiamond) =
-  sum(((-1)^i * X[i, 0] for i in 0:_size(X)); init=BigInt(0))
+  sum(((-1)^q * X[0, q] for q in 0:_size(X)); init=BigInt(0))
 
 """
     hirzebruch(X)

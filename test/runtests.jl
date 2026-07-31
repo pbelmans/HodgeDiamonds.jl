@@ -68,6 +68,10 @@ const HD = HodgeDiamonds
     @test euler(K3()) == 24 == χ_top(K3())
     @test holomorphic_euler(K3()) == 2 == χ(K3())
     @test homological_unit(K3()) == BigInt[1, 0, 1]
+    # without Hodge symmetry it is h^{0,q} that counts, not h^{p,0}
+    @test homological_unit(hopf()) == BigInt[1, 1, 0]
+    @test holomorphic_euler(hopf()) == 0
+    @test holomorphic_euler(kodaira_primary()) == 0
     @test χ_y(K3()) == hirzebruch(K3())
     @test evaluate(hirzebruch(K3()), -1) == euler(K3())
     @test [euler(Pn(n)) for n in 0:9] == BigInt.(1:10)
