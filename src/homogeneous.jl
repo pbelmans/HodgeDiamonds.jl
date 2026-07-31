@@ -155,7 +155,7 @@ function orthogonal_grassmannian(k::Integer, n::Integer)
   if iseven(n)
     k < half || throw(ArgumentError("need k < n/2 for even n"))
     # exceptional case: a submaximal parabolic is needed
-    vertices = k - 1 == half ? collect(1:(half - 2)) : [i for i in 1:half if i != k]
+    vertices = k - 1 == half ? (1:(half - 2)) : [i for i in 1:half if i != k]
     return partial_flag_variety("D$half", vertices)
   end
   k <= half || throw(ArgumentError("need k ≤ (n-1)/2 for odd n"))

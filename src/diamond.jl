@@ -67,11 +67,7 @@ HodgeDiamond(n::Integer) = HodgeDiamond(R(n))
 
 function HodgeDiamond(m::AbstractMatrix{<:Integer}; from_variety::Bool=false)
   size(m, 1) == size(m, 2) || throw(ArgumentError("matrix needs to be square"))
-  builder = MPolyBuildCtx(R)
-  for j in axes(m, 2), i in axes(m, 1)
-    iszero(m[i, j]) || push_term!(builder, ZZ(m[i, j]), [i - 1, j - 1])
-  end
-  return HodgeDiamond(finish(builder); from_variety=from_variety)
+  return HodgeDiamond(build_polynomial(dense_terms(m)); from_variety=from_variety)
 end
 
 function HodgeDiamond(rows::AbstractVector{<:AbstractVector{<:Integer}}; kwargs...)
@@ -121,7 +117,7 @@ julia> Matrix(K3())
 """
 function Base.Matrix(X::HodgeDiamond)
   M = zero_coefficients(_top_degree(X) + 1)
-  for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+  for (coefficient, exponents) in each_term(X.f)
     M[exponents[1] + 1, exponents[2] + 1] = BigInt(coefficient)
   end
   return M
@@ -476,7 +472,7 @@ julia> [betti(hilbn(K3(), n))[3] for n in 2:9]
 """
 function betti(X::HodgeDiamond)
   numbers = zeros(BigInt, 2 * _top_degree(X) + 1)
-  for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+  for (coefficient, exponents) in each_term(X.f)
     numbers[exponents[1] + exponents[2] + 1] += BigInt(coefficient)
   end
   return numbers
@@ -574,7 +570,7 @@ function signature(X::HodgeDiamond)
   return sum(
     (
       (-1)^exponents[1] * BigInt(coefficient) for
-      (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+      (coefficient, exponents) in each_term(X.f)
     );
     init=BigInt(0),
   )
@@ -614,7 +610,7 @@ julia> [euler(hilbn(K3(), n)) for n in 0:5]
 euler(X::HodgeDiamond) = sum(
   (
     (-1)^(exponents[1] + exponents[2]) * BigInt(coefficient) for
-    (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+    (coefficient, exponents) in each_term(X.f)
   );
   init=BigInt(0),
 )
@@ -701,7 +697,7 @@ function hochschild(X::HodgeDiamond)
   d = _top_degree(X)
   # HH_{q - p} collects the diagonal of the Hodge diamond through h^{p,q}
   dimensions = zeros(BigInt, 2d + 1)
-  for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
+  for (coefficient, exponents) in each_term(X.f)
     dimensions[exponents[2] - exponents[1] + d + 1] += BigInt(coefficient)
   end
   return HochschildHomology(dimensions)
@@ -790,11 +786,12 @@ function mirror(X::HodgeDiamond)
   arises_from_variety(X) ||
     throw(ArgumentError("the mirror needs the Hodge diamond of a variety"))
   n = dimension(X)
-  builder = MPolyBuildCtx(R)
-  for (coefficient, exponents) in zip(coefficients(X.f), exponent_vectors(X.f))
-    push_term!(builder, coefficient, [n - exponents[1], exponents[2]])
-  end
-  return HodgeDiamond(finish(builder))
+  return HodgeDiamond(
+    build_polynomial(
+      (coefficient, [n - exponents[1], exponents[2]]) for
+      (coefficient, exponents) in each_term(X.f)
+    ),
+  )
 end
 
 # ── printing ────────────────────────────────────────────────────────────────────

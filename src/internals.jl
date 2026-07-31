@@ -88,18 +88,40 @@ function inverse_truncated(series::Matrix{T}, N::Int) where {T<:Number}
   return inverse
 end
 
-function dense_to_polynomial(dense::Matrix{<:Number})
+"The terms of `f` as `(coefficient, exponents)` pairs."
+each_term(f::HPoly) = zip(coefficients(f), exponent_vectors(f))
+
+"""
+    build_polynomial(terms)
+
+The Hodge--Poincaré polynomial with the given `(coefficient, exponents)` terms, zero
+coefficients dropped.
+"""
+function build_polynomial(terms)
   builder = MPolyBuildCtx(R)
-  for j in axes(dense, 2), i in axes(dense, 1)
-    iszero(dense[i, j]) && continue
-    push_term!(builder, ZZ(BigInt(dense[i, j])), [i - 1, j - 1])
+  for (coefficient, exponents) in terms
+    is_zero(coefficient) || push_term!(builder, ZZ(coefficient), exponents)
   end
   return finish(builder)
 end
 
+"The numerator of a rational that must be an integer, as del Baño's and Göttsche's sums are."
+function _integral(value)
+  isone(Base.denominator(value)) ||
+    throw(ErrorException("expected an integral coefficient, got $value"))
+  return Base.numerator(value)
+end
+
+"The `(coefficient, exponents)` terms of a dense matrix of coefficients."
+dense_terms(dense::AbstractMatrix) =
+  ((dense[i, j], [i - 1, j - 1]) for j in axes(dense, 2) for i in axes(dense, 1))
+
+dense_to_polynomial(dense::Matrix{<:Number}) =
+  build_polynomial((BigInt(value), exponents) for (value, exponents) in dense_terms(dense))
+
 function polynomial_to_dense(::Type{T}, f::HPoly, N::Int) where {T<:Number}
   dense = zero_coefficients(T, N + 1)
-  for (coefficient, exponents) in zip(coefficients(f), exponent_vectors(f))
+  for (coefficient, exponents) in each_term(f)
     (exponents[1] <= N && exponents[2] <= N) &&
       (dense[exponents[1] + 1, exponents[2] + 1] = T(BigInt(coefficient)))
   end

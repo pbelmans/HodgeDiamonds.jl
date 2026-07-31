@@ -150,14 +150,12 @@ end
 
 # f(sign * x^power, sign * y^power)
 function _substitute_powers(f::HPoly, power::Int, sign::Int)
-  builder = MPolyBuildCtx(R)
-  for (coefficient, exponents) in zip(coefficients(f), exponent_vectors(f))
-    scaled = sign == -1 ? (-1)^(exponents[1] + exponents[2]) : 1
-    push_term!(
-      builder, scaled * coefficient, [power * exponents[1], power * exponents[2]]
-    )
-  end
-  return finish(builder)
+  return build_polynomial(
+    (
+      (sign == -1 ? (-1)^(exponents[1] + exponents[2]) : 1) * coefficient,
+      [power * exponents[1], power * exponents[2]],
+    ) for (coefficient, exponents) in each_term(f)
+  )
 end
 
 """
@@ -271,15 +269,9 @@ function _kummer_product(n::Int, N::Int)
 end
 
 function _to_integral_polynomial(dense::Matrix{RationalCoefficient})
-  builder = MPolyBuildCtx(R)
-  for j in axes(dense, 2), i in axes(dense, 1)
-    value = dense[i, j]
-    iszero(value) && continue
-    isone(Base.denominator(value)) ||
-      throw(ErrorException("expected an integral coefficient, got $value"))
-    push_term!(builder, ZZ(Base.numerator(value)), [i - 1, j - 1])
-  end
-  return finish(builder)
+  return build_polynomial(
+    (_integral(value), exponents) for (value, exponents) in dense_terms(dense)
+  )
 end
 
 """
@@ -875,15 +867,14 @@ function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
     return BigInt(coeff(q_binomial(2g - i - j, i - j), index))
   end
 
-  builder = MPolyBuildCtx(R)
-  for degree in 0:(i * (2g - 2i))
-    coefficient = sum(
-      multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i;
-      init=BigInt(0),
-    )
-    is_zero(coefficient) || push_term!(builder, ZZ(coefficient), [degree, degree])
-  end
-  return HodgeDiamond(finish(builder); from_variety=true)
+  cell_count(degree) =
+    sum(multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i; init=BigInt(0))
+  return HodgeDiamond(
+    build_polynomial(
+      (cell_count(degree), [degree, degree]) for degree in 0:(i * (2g - 2i))
+    );
+    from_variety=true,
+  )
 end
 
 # ── quiver moduli ────────────────────────────────────────────────────────────────
@@ -1028,15 +1019,11 @@ function quiver_moduli(Q, d; mu=nothing)
   poincare = numerator(result)
 
   # substitute v = xy
-  builder = MPolyBuildCtx(R)
-  for i in 0:degree(poincare)
-    coefficient = coeff(poincare, i)
-    is_zero(coefficient) && continue
-    isone(Base.denominator(coefficient)) ||
-      throw(ErrorException("expected an integral coefficient"))
-    push_term!(builder, ZZ(Base.numerator(coefficient)), [i, i])
-  end
-  return HodgeDiamond(finish(builder))
+  return HodgeDiamond(
+    build_polynomial(
+      (_integral(coeff(poincare, i)), [i, i]) for i in 0:degree(poincare)
+    ),
+  )
 end
 
 # A quiver is acyclic exactly when its adjacency matrix is nilpotent, and an n × n matrix

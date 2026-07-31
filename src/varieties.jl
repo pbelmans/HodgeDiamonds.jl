@@ -250,11 +250,11 @@ true
 function kummer_resolution(dimension::Integer)
   g = dimension
   f = polynomial(jacobian(g))
-  builder = MPolyBuildCtx(R)
-  for (coefficient, exponents) in zip(coefficients(f), exponent_vectors(f))
-    iseven(exponents[1] + exponents[2]) && push_term!(builder, coefficient, exponents)
-  end
-  return HodgeDiamond(finish(builder)) +
+  invariant = build_polynomial(
+    (coefficient, exponents) for
+    (coefficient, exponents) in each_term(f) if iseven(exponents[1] + exponents[2])
+  )
+  return HodgeDiamond(invariant) +
          sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond))
 end
 

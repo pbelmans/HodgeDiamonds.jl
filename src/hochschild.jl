@@ -213,9 +213,7 @@ function symmetric_power(h::HochschildHomology, k::Integer)
     for count in values(multiplicities(partition))
       factor = _convolve(factor, _symmetric_summand(terms, count))
     end
-    for (exponent, coefficient) in factor
-      total[exponent] = get(total, exponent, BigInt(0)) + coefficient
-    end
+    mergewith!(+, total, factor)
   end
   reach = maximum((abs(exponent) for (exponent, _) in total); init=0)
   return HochschildHomology([get(total, i, BigInt(0)) for i in (-reach):reach])
@@ -236,22 +234,17 @@ end
 function _symmetric_summand(terms::Vector{Tuple{Int,BigInt}}, k::Int)
   isempty(terms) && return Dict{Int,BigInt}()
   if length(terms) == 1
-    degree, dimension = terms[1]
-    coefficient = if iseven(degree)
-      falling_binomial(dimension + k - 1, k)
-    else
-      falling_binomial(dimension, k)
-    end
+    degree, thickness = terms[1]
+    coefficient = falling_binomial(iseven(degree) ? thickness + k - 1 : thickness, k)
     return is_zero(coefficient) ? Dict{Int,BigInt}() : Dict(k * degree => coefficient)
   end
   total = Dict{Int,BigInt}()
   for j in 0:k
-    piece = _convolve(
-      _symmetric_summand(terms[1:1], j), _symmetric_summand(terms[2:end], k - j)
+    mergewith!(
+      +,
+      total,
+      _convolve(_symmetric_summand(terms[1:1], j), _symmetric_summand(terms[2:end], k - j)),
     )
-    for (exponent, coefficient) in piece
-      total[exponent] = get(total, exponent, BigInt(0)) + coefficient
-    end
   end
   return total
 end
