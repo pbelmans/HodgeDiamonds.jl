@@ -196,7 +196,11 @@ const R, x, y = hodge_ring()
     # a surface without Hodge symmetry still works, without using Serre duality
     @test dimension(hilbn(hopf(), 2)) == 4
     @test dimension(nestedhilbn(K3(), 3)) == 6
-    @test_throws ArgumentError hilbn(curve(2), 2)
+    # on a curve the Hilbert scheme is the symmetric power
+    @test all(hilbn(curve(g), n) == symn(g, n) for g in 0:4, n in 0:4)
+    @test hilbn(Pn(1), 3) == Pn(3)
+    @test_throws ArgumentError hilbn(lefschetz(), 2)
+    @test_throws ArgumentError hilbn(Pn(3), 2)
   end
 
   @testset "hyperkähler varieties" begin

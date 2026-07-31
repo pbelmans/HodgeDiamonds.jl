@@ -3,10 +3,11 @@ const RationalCoefficient = Rational{BigInt}
 # ── Hilbert schemes of points ────────────────────────────────────────────────────
 
 """
-    hilbn(S, n)
+    hilbn(X, n)
 
-Hodge diamond of the Hilbert scheme of `n` points on a smooth projective surface `S`,
-using Theorem 2.3.14 of [MR1312161].
+Hodge diamond of the Hilbert scheme of `n` points on a smooth projective curve or surface
+`X`. For a surface this is Theorem 2.3.14 of [MR1312161]; for a curve the Hilbert scheme is
+the symmetric power, see [`symn`](@ref).
 
   - [MR1312161] Göttsche, Hilbert schemes of zero-dimensional subschemes of smooth
     varieties. Lecture Notes in Mathematics, 1572. Springer-Verlag, Berlin, 1994.
@@ -20,9 +21,24 @@ true
 julia> betti(hilbn(K3(), 3))[3]
 23
 ```
+
+On a curve of genus 3 the Hilbert scheme of 2 points is the symmetric square:
+
+```jldoctest
+julia> hilbn(curve(3), 2) == symn(3, 2)
+true
+```
 """
 function hilbn(S::HodgeDiamond, n::Integer)
-  dimension(S) == 2 || throw(ArgumentError("need the Hodge diamond of a surface"))
+  if dimension(S) == 1
+    # the Hilbert scheme of a smooth curve is its symmetric power
+    genus = S[0, 1]
+    genus >= 0 && S == curve(genus) ||
+      throw(ArgumentError("need the Hodge diamond of a smooth curve"))
+    return symn(genus, n)
+  end
+  dimension(S) == 2 ||
+    throw(ArgumentError("need the Hodge diamond of a curve or of a surface"))
   n = Int(n)
   hodge_numbers = BigInt[S[p, q] for p in 0:2, q in 0:2]
   top = hilbn_series(hodge_numbers, n)[end]
