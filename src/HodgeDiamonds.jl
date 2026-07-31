@@ -44,6 +44,7 @@ include("internals.jl")
 include("diamond.jl")
 include("varieties.jl")
 include("homogeneous.jl")
+include("moduli.jl")
 
 # ── exports from diamond.jl ─────────────────────────────────────────────────────
 
@@ -93,5 +94,16 @@ export generalised_grassmannian,
     orthogonal_grassmannian,
     partial_flag_variety,
     symplectic_grassmannian
+
+# ── exports from moduli.jl ──────────────────────────────────────────────────────
+
+export K3n, generalised_kummer, hilbn, hilbthree, hilbtwo, nestedhilbn, ogrady6, ogrady10
+export brauer_severi,
+    moduli_parabolic_vector_bundles_rank_two,
+    moduli_vector_bundles,
+    quiver_moduli,
+    quot_scheme_curve,
+    seshadris_desingularisation,
+    slope
 
 end # module
