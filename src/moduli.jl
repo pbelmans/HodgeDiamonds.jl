@@ -406,6 +406,7 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
         length_numerator[k] = factor
     end
 
+    numerator_cache = Dict{Tuple{Vector{Int},Int},Matrix{BigInt}}()
     total = zero_coefficients(N + 1)
     for composition in compositions(r)
         k = length(composition)
@@ -427,9 +428,14 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
         # everything upstream of the shift only needs this much precision
         M = N - shift
 
-        piece = length_numerator[k]
-        for part in composition
-            piece = multiply_truncated(piece, part_numerator[part], M)
+        # the numerator depends only on the multiset of parts, not their order, so a
+        # rank r sees p(r) products rather than 2^(r-1) of them
+        piece = get!(numerator_cache, (sort(composition), M)) do
+            product = length_numerator[k]
+            for part in composition
+                product = multiply_truncated(product, part_numerator[part], M)
+            end
+            product
         end
 
         # every denominator is a polynomial in L = xy, so collect and invert once
