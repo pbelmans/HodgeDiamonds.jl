@@ -71,8 +71,8 @@ true
 ```
 """
 function Pn(n::Integer)
-    n >= 0 || throw(ArgumentError("dimension needs to be non-negative"))
-    return from_polynomial(sum((x * y)^i for i in 0:n))
+  n >= 0 || throw(ArgumentError("dimension needs to be non-negative"))
+  return from_polynomial(sum((x * y)^i for i in 0:n))
 end
 
 """
@@ -99,8 +99,8 @@ julia> curve(2)
 ```
 """
 function curve(genus::Integer)
-    genus >= 0 || throw(ArgumentError("genus needs to be non-negative"))
-    return from_polynomial(1 + genus * x + genus * y + x * y)
+  genus >= 0 || throw(ArgumentError("genus needs to be non-negative"))
+  return from_polynomial(1 + genus * x + genus * y + x * y)
 end
 
 """
@@ -122,11 +122,11 @@ true
 ```
 """
 function surface(genus::Integer, irregularity::Integer, h11::Integer)
-    (genus >= 0 && irregularity >= 0 && h11 >= 0) ||
-        throw(ArgumentError("invariants need to be non-negative"))
-    return from_matrix(
-        [1 irregularity genus; irregularity h11 irregularity; genus irregularity 1]
-    )
+  (genus >= 0 && irregularity >= 0 && h11 >= 0) ||
+    throw(ArgumentError("invariants need to be non-negative"))
+  return from_matrix(
+    [1 irregularity genus; irregularity h11 irregularity; genus irregularity 1]
+  )
 end
 
 """
@@ -167,19 +167,19 @@ true
 ```
 """
 function symmetric_power(n::Integer, genus::Integer)
-    n < 0 && return zero(HodgeDiamond)
-    function hodge(p, q)
-        return if p > q
-            hodge(q, p)
-        elseif p + q > n
-            hodge(n - p, n - q)
-        else
-            sum(
-                binomial(BigInt(genus), p - k) * binomial(BigInt(genus), q - k) for k in 0:p
-            )
-        end
+  n < 0 && return zero(HodgeDiamond)
+  function hodge(p, q)
+    return if p > q
+      hodge(q, p)
+    elseif p + q > n
+      hodge(n - p, n - q)
+    else
+      sum(
+        binomial(BigInt(genus), p - k) * binomial(BigInt(genus), q - k) for k in 0:p
+      )
     end
-    return from_matrix([hodge(i, j) for i in 0:n, j in 0:n])
+  end
+  return from_matrix([hodge(i, j) for i in 0:n, j in 0:n])
 end
 
 """
@@ -251,16 +251,16 @@ true
 ```
 """
 function kummer_resolution(dimension::Integer)
-    g = dimension
-    builder = MPolyBuildCtx(R)
-    for (coefficient, exponents) in zip(
-        coefficients(polynomial(jacobian(g))), exponent_vectors(polynomial(jacobian(g)))
-    )
-        iseven(exponents[1] + exponents[2]) && push_term!(builder, coefficient, exponents)
-    end
-    invariant = from_polynomial(finish(builder))
-    return invariant +
-           sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond))
+  g = dimension
+  builder = MPolyBuildCtx(R)
+  for (coefficient, exponents) in zip(
+    coefficients(polynomial(jacobian(g))), exponent_vectors(polynomial(jacobian(g)))
+  )
+    iseven(exponents[1] + exponents[2]) && push_term!(builder, coefficient, exponents)
+  end
+  invariant = from_polynomial(finish(builder))
+  return invariant +
+         sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond))
 end
 
 # ── complete intersections ───────────────────────────────────────────────────────
@@ -275,20 +275,20 @@ end
 
 "``\\bigl((1+a)^d-(1+b)^d\\bigr)/(a-b)``, truncated to bidegree ``(N, N)``."
 function _intersection_numerator(d::Integer, N::Int)
-    dense = zero_coefficients(N + 1)
-    for k in 1:d, j in 0:(k - 1)
-        (j <= N && k - 1 - j <= N) && (dense[j + 1, k - j] += binomial(BigInt(d), k))
-    end
-    return dense
+  dense = zero_coefficients(N + 1)
+  for k in 1:d, j in 0:(k - 1)
+    (j <= N && k - 1 - j <= N) && (dense[j + 1, k - j] += binomial(BigInt(d), k))
+  end
+  return dense
 end
 
 "``\\bigl(a(1+b)^d-b(1+a)^d\\bigr)/(a-b)``, truncated to bidegree ``(N, N)``."
 function _intersection_denominator(d::Integer, N::Int)
-    dense = dense_one(N)
-    for k in 1:d, j in 0:(k - 2)
-        (j + 1 <= N && k - 1 - j <= N) && (dense[j + 2, k - j] -= binomial(BigInt(d), k))
-    end
-    return dense
+  dense = dense_one(N)
+  for k in 1:d, j in 0:(k - 2)
+    (j + 1 <= N && k - 1 - j <= N) && (dense[j + 2, k - j] -= binomial(BigInt(d), k))
+  end
+  return dense
 end
 
 """
@@ -345,41 +345,41 @@ julia> [euler(complete_intersection([2, 2], n)) for n in 0:9]
 ```
 """
 function complete_intersection(degrees, dimension::Integer)
-    multidegree = degrees isa Integer ? [degrees] : collect(degrees)
-    N = Int(dimension)
+  multidegree = degrees isa Integer ? [degrees] : collect(degrees)
+  N = Int(dimension)
 
-    product = dense_one(N)
-    for d in multidegree
-        quotient = multiply_truncated(
-            _intersection_numerator(d, N),
-            inverse_truncated(_intersection_denominator(d, N), N),
-            N,
-        )
-        product = multiply_truncated(product, quotient, N)
-    end
-    product[1, 1] -= 1                                      # subtract the leading 1
+  product = dense_one(N)
+  for d in multidegree
+    quotient = multiply_truncated(
+      _intersection_numerator(d, N),
+      inverse_truncated(_intersection_denominator(d, N), N),
+      N,
+    )
+    product = multiply_truncated(product, quotient, N)
+  end
+  product[1, 1] -= 1                                      # subtract the leading 1
 
-    ambient = multiply_truncated(dense_one(N) + _one_plus(N), dense_one(N), N)
-    generating = multiply_truncated(product, inverse_truncated(ambient, N), N)
-    for k in 0:N                                            # add 1/(1 - ab)
-        generating[k + 1, k + 1] += 1
-    end
+  ambient = multiply_truncated(dense_one(N) + _one_plus(N), dense_one(N), N)
+  generating = multiply_truncated(product, inverse_truncated(ambient, N), N)
+  for k in 0:N                                            # add 1/(1 - ab)
+    generating[k + 1, k + 1] += 1
+  end
 
-    M = zero_coefficients(N + 1)
-    for i in 0:N
-        M[i + 1, i + 1] = 1
-    end
-    for i in 0:N
-        M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
-    end
-    return from_matrix(M; from_variety=true)
+  M = zero_coefficients(N + 1)
+  for i in 0:N
+    M[i + 1, i + 1] = 1
+  end
+  for i in 0:N
+    M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
+  end
+  return from_matrix(M; from_variety=true)
 end
 
 # (1 + a)(1 + b) - 1, so that `dense_one(N) + _one_plus(N)` is (1 + a)(1 + b)
 function _one_plus(N::Int)
-    dense = zero_coefficients(N + 1)
-    N >= 1 && (dense[2, 1] = 1; dense[1, 2] = 1; dense[2, 2] = 1)
-    return dense
+  dense = zero_coefficients(N + 1)
+  N >= 1 && (dense[2, 1] = 1; dense[1, 2] = 1; dense[2, 2] = 1)
+  return dense
 end
 
 """
@@ -482,10 +482,10 @@ enriques("supersingular")
 enriques() = surface(0, 0, 10)
 
 function enriques(kind::AbstractString)
-    kind == "classical" && return from_matrix([1 0 0; 1 12 1; 0 0 1])
-    kind == "singular" && return from_matrix([1 1 1; 0 10 0; 1 1 1])
-    kind == "supersingular" && return from_matrix([1 1 1; 1 12 1; 1 1 1])
-    throw(ArgumentError("invalid choice for characteristic 2: $kind"))
+  kind == "classical" && return from_matrix([1 0 0; 1 12 1; 0 0 1])
+  kind == "singular" && return from_matrix([1 1 1; 0 10 0; 1 1 1])
+  kind == "supersingular" && return from_matrix([1 1 1; 1 12 1; 1 1 1])
+  throw(ArgumentError("invalid choice for characteristic 2: $kind"))
 end
 
 """
@@ -602,40 +602,40 @@ julia> middle(weighted_hypersurface(5, [1, 1, 1, 2]))
 ```
 """
 function weighted_hypersurface(degree::Integer, weights)
-    W = weights isa Integer ? fill(1, weights + 1) : collect(weights)
-    n = length(W) - 1
-    total_weight = sum(W)
-    precision = max(0, n * degree)
+  W = weights isa Integer ? fill(1, weights + 1) : collect(weights)
+  n = length(W) - 1
+  total_weight = sum(W)
+  precision = max(0, n * degree)
 
-    series = series_one(precision)
-    for weight in W
-        degree >= weight ||
-            throw(ArgumentError("degree $degree is smaller than the weight $weight"))
-        series = series_multiply(
-            series, series_one_minus_power(Int(degree - weight), precision), precision
-        )
-        series = series_multiply(
-            series,
-            series_inverse(series_one_minus_power(Int(weight), precision), precision),
-            precision,
-        )
-    end
+  series = series_one(precision)
+  for weight in W
+    degree >= weight ||
+      throw(ArgumentError("degree $degree is smaller than the weight $weight"))
+    series = series_multiply(
+      series, series_one_minus_power(Int(degree - weight), precision), precision
+    )
+    series = series_multiply(
+      series,
+      series_inverse(series_one_minus_power(Int(weight), precision), precision),
+      precision,
+    )
+  end
 
-    function hodge(i, j)
-        i + j != n - 1 && return i == j ? BigInt(1) : BigInt(0)
-        index = j * degree + degree - total_weight
-        value = 0 <= index <= precision ? series[index + 1] : BigInt(0)
-        return i == j ? value + 1 : value
-    end
+  function hodge(i, j)
+    i + j != n - 1 && return i == j ? BigInt(1) : BigInt(0)
+    index = j * degree + degree - total_weight
+    value = 0 <= index <= precision ? series[index + 1] : BigInt(0)
+    return i == j ? value + 1 : value
+  end
 
-    M = zero_coefficients(n)
-    for i in 0:(n - 1)
-        M[i + 1, i + 1] = 1
-    end
-    for i in 0:(n - 1)
-        M[i + 1, n - i] = hodge(i, n - i - 1)
-    end
-    return from_matrix(M; from_variety=true)
+  M = zero_coefficients(n)
+  for i in 0:(n - 1)
+    M[i + 1, i + 1] = 1
+  end
+  for i in 0:(n - 1)
+    M[i + 1, n - i] = hodge(i, n - i - 1)
+  end
+  return from_matrix(M; from_variety=true)
 end
 
 """
@@ -661,9 +661,9 @@ true
 ```
 """
 function cyclic_cover(ramification_degree::Integer, cover_degree::Integer, weights)
-    W = weights isa Integer ? fill(1, weights + 1) : collect(weights)
-    push!(W, ramification_degree ÷ cover_degree)
-    return weighted_hypersurface(ramification_degree, W)
+  W = weights isa Integer ? fill(1, weights + 1) : collect(weights)
+  push!(W, ramification_degree ÷ cover_degree)
+  return weighted_hypersurface(ramification_degree, W)
 end
 
 # ── Fano varieties ───────────────────────────────────────────────────────────────
@@ -678,13 +678,13 @@ See Proposition 3.1 of [1605.05648v3].
   - [1605.05648v3] Debarre--Kuznetsov, Gushel-Mukai varieties: linear spaces and periods
 """
 function gushel_mukai(n::Integer)
-    n in 1:6 || throw(ArgumentError("there is no Gushel--Mukai variety of dimension $n"))
-    n == 1 && return curve(6)
-    n == 2 && return K3()
-    n == 3 && return curve(10)(1) + point() + lefschetz()^3
-    n == 4 && return K3()(1) + point() + 2 * lefschetz()^2 + lefschetz()^4
-    n == 5 && return curve(10)(2) + Pn(5)
-    return K3()(2) + lefschetz()^3 + Pn(6)
+  n in 1:6 || throw(ArgumentError("there is no Gushel--Mukai variety of dimension $n"))
+  n == 1 && return curve(6)
+  n == 2 && return K3()
+  n == 3 && return curve(10)(1) + point() + lefschetz()^3
+  n == 4 && return K3()(1) + point() + 2 * lefschetz()^2 + lefschetz()^4
+  n == 5 && return curve(10)(2) + Pn(5)
+  return K3()(2) + lefschetz()^3 + Pn(6)
 end
 
 """
@@ -721,9 +721,9 @@ true
 ```
 """
 function fano_variety_lines_cubic(n::Integer)
-    n >= 2 || throw(ArgumentError("dimension needs to be at least 2"))
-    X = hypersurface(3, n)
-    return (hilbtwo(X) - Pn(n) * X)(-2)
+  n >= 2 || throw(ArgumentError("dimension needs to be at least 2"))
+  X = hypersurface(3, n)
+  return (hilbtwo(X) - Pn(n) * X)(-2)
 end
 
 """
@@ -759,60 +759,60 @@ true
 ```
 """
 function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
-    g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
-    k in 0:(g - 1) || throw(ArgumentError("non-empty only for k from 0 to g - 1"))
-    k == g - 1 && return jacobian(g)
+  g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
+  k in 0:(g - 1) || throw(ArgumentError("non-empty only for k from 0 to g - 1"))
+  k == g - 1 && return jacobian(g)
 
-    # notation of Chen--Vilonen--Xue
-    i = g - k
-    d = (g - i + 1) * (2i - 1)
-    precision = 3d + 1
+  # notation of Chen--Vilonen--Xue
+  i = g - k
+  d = (g - i + 1) * (2i - 1)
+  precision = 3d + 1
 
-    # multiplicity N_i(k, j) of Theorem 1.1, with the q^{-shift} turned into an index shift
-    multiplicity_series = Dict{Int,Vector{BigInt}}()
-    for j in (i - 1):g
-        series = series_one_minus_power(4j, precision)
-        for l in (j - i + 2):(i + j - 2)
-            series = series_multiply(
-                series, series_one_minus_power(2l, precision), precision
-            )
-        end
-        for l in 1:(2i - 2)
-            series = series_multiply(
-                series,
-                series_inverse(series_one_minus_power(2l, precision), precision),
-                precision,
-            )
-        end
-        multiplicity_series[j] = series
+  # multiplicity N_i(k, j) of Theorem 1.1, with the q^{-shift} turned into an index shift
+  multiplicity_series = Dict{Int,Vector{BigInt}}()
+  for j in (i - 1):g
+    series = series_one_minus_power(4j, precision)
+    for l in (j - i + 2):(i + j - 2)
+      series = series_multiply(
+        series, series_one_minus_power(2l, precision), precision
+      )
     end
-
-    function multiplicity(index, j)
-        shifted = index + (j - i + 1) * (2i - 1)
-        return 0 <= shifted <= precision ? multiplicity_series[j][shifted + 1] : BigInt(0)
+    for l in 1:(2i - 2)
+      series = series_multiply(
+        series,
+        series_inverse(series_one_minus_power(2l, precision), precision),
+        precision,
+      )
     end
+    multiplicity_series[j] = series
+  end
 
-    jacobian_g = jacobian(g)
-    builder = MPolyBuildCtx(R)
-    for degree in 0:(2d), j in (i - 1):g
-        coefficient = multiplicity(d - degree, j)
-        is_zero(coefficient) && continue
-        # the (g-j)th exterior power of the first cohomology of the curve is the
-        # (g-j)th cohomology of the Jacobian
-        dimensions = row(jacobian_g, g - j)
-        twist = degree - (g - j)
-        iseven(twist) && twist >= 0 ||
-            throw(ErrorException("unexpected parity in the Lefschetz twist"))
-        for m in 0:(g - j)
-            is_zero(dimensions[m + 1]) && continue
-            push_term!(
-                builder,
-                ZZ(coefficient * dimensions[m + 1]),
-                [m + twist ÷ 2, (g - j) - m + twist ÷ 2],
-            )
-        end
+  function multiplicity(index, j)
+    shifted = index + (j - i + 1) * (2i - 1)
+    return 0 <= shifted <= precision ? multiplicity_series[j][shifted + 1] : BigInt(0)
+  end
+
+  jacobian_g = jacobian(g)
+  builder = MPolyBuildCtx(R)
+  for degree in 0:(2d), j in (i - 1):g
+    coefficient = multiplicity(d - degree, j)
+    is_zero(coefficient) && continue
+    # the (g-j)th exterior power of the first cohomology of the curve is the
+    # (g-j)th cohomology of the Jacobian
+    dimensions = row(jacobian_g, g - j)
+    twist = degree - (g - j)
+    iseven(twist) && twist >= 0 ||
+      throw(ErrorException("unexpected parity in the Lefschetz twist"))
+    for m in 0:(g - j)
+      is_zero(dimensions[m + 1]) && continue
+      push_term!(
+        builder,
+        ZZ(coefficient * dimensions[m + 1]),
+        [m + twist ÷ 2, (g - j) - m + twist ÷ 2],
+      )
     end
-    return from_polynomial(finish(builder); from_variety=true)
+  end
+  return from_polynomial(finish(builder); from_variety=true)
 end
 
 """
@@ -844,133 +844,133 @@ julia> fano_variety_intersection_quadrics_even(4, 3)
 ```
 """
 function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
-    g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
-    k in 0:(g - 1) || throw(ArgumentError("non-empty only for k from 0 to g - 1"))
-    i = k + 1
+  g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
+  k in 0:(g - 1) || throw(ArgumentError("non-empty only for k from 0 to g - 1"))
+  i = k + 1
 
-    function multiplicity(degree, j)
-        index = degree - j * (g - i)
-        index < 0 && return BigInt(0)
-        return BigInt(coeff(q_binomial(2g - i - j, i - j), index))
-    end
+  function multiplicity(degree, j)
+    index = degree - j * (g - i)
+    index < 0 && return BigInt(0)
+    return BigInt(coeff(q_binomial(2g - i - j, i - j), index))
+  end
 
-    builder = MPolyBuildCtx(R)
-    for degree in 0:(i * (2g - 2i))
-        coefficient = sum(
-            multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i;
-            init=BigInt(0),
-        )
-        is_zero(coefficient) || push_term!(builder, ZZ(coefficient), [degree, degree])
-    end
-    return from_polynomial(finish(builder); from_variety=true)
+  builder = MPolyBuildCtx(R)
+  for degree in 0:(i * (2g - 2i))
+    coefficient = sum(
+      multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i;
+      init=BigInt(0),
+    )
+    is_zero(coefficient) || push_term!(builder, ZZ(coefficient), [degree, degree])
+  end
+  return from_polynomial(finish(builder); from_variety=true)
 end
 
 const FANO_THREEFOLD_H12 = Dict{Tuple{Int,Int},Int}(
-    (1, 1) => 52,
-    (1, 2) => 30,
-    (1, 3) => 20,
-    (1, 4) => 14,
-    (1, 5) => 10,
-    (1, 6) => 7,
-    (1, 7) => 5,
-    (1, 8) => 3,
-    (1, 9) => 2,
-    (1, 10) => 0,
-    (1, 11) => 21,
-    (1, 12) => 10,
-    (1, 13) => 5,
-    (1, 14) => 2,
-    (1, 15) => 0,
-    (1, 16) => 0,
-    (1, 17) => 0,
-    (2, 1) => 22,
-    (2, 2) => 20,
-    (2, 3) => 11,
-    (2, 4) => 10,
-    (2, 5) => 6,
-    (2, 6) => 9,
-    (2, 7) => 5,
-    (2, 8) => 9,
-    (2, 9) => 5,
-    (2, 10) => 3,
-    (2, 11) => 5,
-    (2, 12) => 3,
-    (2, 13) => 2,
-    (2, 14) => 1,
-    (2, 15) => 4,
-    (2, 16) => 2,
-    (2, 17) => 1,
-    (2, 18) => 2,
-    (2, 19) => 2,
-    (2, 20) => 0,
-    (2, 21) => 0,
-    (2, 22) => 0,
-    (2, 23) => 1,
-    (2, 24) => 0,
-    (2, 25) => 1,
-    (2, 26) => 0,
-    (2, 27) => 0,
-    (2, 28) => 1,
-    (2, 29) => 0,
-    (2, 30) => 0,
-    (2, 31) => 0,
-    (2, 32) => 0,
-    (2, 33) => 0,
-    (2, 34) => 0,
-    (2, 35) => 0,
-    (2, 36) => 0,
-    (3, 1) => 8,
-    (3, 2) => 3,
-    (3, 3) => 3,
-    (3, 4) => 2,
-    (3, 5) => 0,
-    (3, 6) => 1,
-    (3, 7) => 1,
-    (3, 8) => 0,
-    (3, 9) => 3,
-    (3, 10) => 0,
-    (3, 11) => 1,
-    (3, 12) => 0,
-    (3, 13) => 0,
-    (3, 14) => 1,
-    (3, 15) => 0,
-    (3, 16) => 0,
-    (3, 17) => 0,
-    (3, 18) => 0,
-    (3, 19) => 0,
-    (3, 20) => 0,
-    (3, 21) => 0,
-    (3, 22) => 0,
-    (3, 23) => 0,
-    (3, 24) => 0,
-    (3, 25) => 0,
-    (3, 26) => 0,
-    (3, 27) => 0,
-    (3, 28) => 0,
-    (3, 29) => 0,
-    (3, 30) => 0,
-    (3, 31) => 0,
-    (4, 1) => 1,
-    (4, 2) => 1,
-    (4, 3) => 0,
-    (4, 4) => 0,
-    (4, 5) => 0,
-    (4, 6) => 0,
-    (4, 7) => 0,
-    (4, 8) => 0,
-    (4, 9) => 0,
-    (4, 10) => 0,
-    (4, 11) => 0,
-    (4, 12) => 0,
-    (4, 13) => 0,
-    (5, 1) => 0,
-    (5, 2) => 0,
-    (5, 3) => 0,
-    (6, 1) => 0,
-    (7, 1) => 0,
-    (8, 1) => 0,
-    (9, 1) => 0,
-    (10, 1) => 0,
+  (1, 1) => 52,
+  (1, 2) => 30,
+  (1, 3) => 20,
+  (1, 4) => 14,
+  (1, 5) => 10,
+  (1, 6) => 7,
+  (1, 7) => 5,
+  (1, 8) => 3,
+  (1, 9) => 2,
+  (1, 10) => 0,
+  (1, 11) => 21,
+  (1, 12) => 10,
+  (1, 13) => 5,
+  (1, 14) => 2,
+  (1, 15) => 0,
+  (1, 16) => 0,
+  (1, 17) => 0,
+  (2, 1) => 22,
+  (2, 2) => 20,
+  (2, 3) => 11,
+  (2, 4) => 10,
+  (2, 5) => 6,
+  (2, 6) => 9,
+  (2, 7) => 5,
+  (2, 8) => 9,
+  (2, 9) => 5,
+  (2, 10) => 3,
+  (2, 11) => 5,
+  (2, 12) => 3,
+  (2, 13) => 2,
+  (2, 14) => 1,
+  (2, 15) => 4,
+  (2, 16) => 2,
+  (2, 17) => 1,
+  (2, 18) => 2,
+  (2, 19) => 2,
+  (2, 20) => 0,
+  (2, 21) => 0,
+  (2, 22) => 0,
+  (2, 23) => 1,
+  (2, 24) => 0,
+  (2, 25) => 1,
+  (2, 26) => 0,
+  (2, 27) => 0,
+  (2, 28) => 1,
+  (2, 29) => 0,
+  (2, 30) => 0,
+  (2, 31) => 0,
+  (2, 32) => 0,
+  (2, 33) => 0,
+  (2, 34) => 0,
+  (2, 35) => 0,
+  (2, 36) => 0,
+  (3, 1) => 8,
+  (3, 2) => 3,
+  (3, 3) => 3,
+  (3, 4) => 2,
+  (3, 5) => 0,
+  (3, 6) => 1,
+  (3, 7) => 1,
+  (3, 8) => 0,
+  (3, 9) => 3,
+  (3, 10) => 0,
+  (3, 11) => 1,
+  (3, 12) => 0,
+  (3, 13) => 0,
+  (3, 14) => 1,
+  (3, 15) => 0,
+  (3, 16) => 0,
+  (3, 17) => 0,
+  (3, 18) => 0,
+  (3, 19) => 0,
+  (3, 20) => 0,
+  (3, 21) => 0,
+  (3, 22) => 0,
+  (3, 23) => 0,
+  (3, 24) => 0,
+  (3, 25) => 0,
+  (3, 26) => 0,
+  (3, 27) => 0,
+  (3, 28) => 0,
+  (3, 29) => 0,
+  (3, 30) => 0,
+  (3, 31) => 0,
+  (4, 1) => 1,
+  (4, 2) => 1,
+  (4, 3) => 0,
+  (4, 4) => 0,
+  (4, 5) => 0,
+  (4, 6) => 0,
+  (4, 7) => 0,
+  (4, 8) => 0,
+  (4, 9) => 0,
+  (4, 10) => 0,
+  (4, 11) => 0,
+  (4, 12) => 0,
+  (4, 13) => 0,
+  (5, 1) => 0,
+  (5, 2) => 0,
+  (5, 3) => 0,
+  (6, 1) => 0,
+  (7, 1) => 0,
+  (8, 1) => 0,
+  (9, 1) => 0,
+  (10, 1) => 0,
 )
 
 """
@@ -1000,11 +1000,11 @@ true
 ```
 """
 function fano_threefold(rank::Integer, identifier::Integer)
-    key = (Int(rank), Int(identifier))
-    haskey(FANO_THREEFOLD_H12, key) ||
-        throw(ArgumentError("no Fano threefold with rank $rank and number $identifier"))
-    h12 = FANO_THREEFOLD_H12[key]
-    return from_matrix([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)
+  key = (Int(rank), Int(identifier))
+  haskey(FANO_THREEFOLD_H12, key) ||
+    throw(ArgumentError("no Fano threefold with rank $rank and number $identifier"))
+  h12 = FANO_THREEFOLD_H12[key]
+  return from_matrix([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)
 end
 
 # ── other ───────────────────────────────────────────────────────────────────────
@@ -1012,16 +1012,16 @@ end
 const MANIN_CACHE = Dict{Int,HPoly}()
 
 function _manin(n::Int)
-    n in (2, 3) && return one(R)
-    return get!(MANIN_CACHE, n) do
-        _manin(n - 1) +
-        x *
-        y *
-        sum(
-            binomial(BigInt(n - 2), i) * _manin(i + 1) * _manin(n - i) for i in 2:(n - 2);
-            init=zero(R),
-        )
-    end
+  n in (2, 3) && return one(R)
+  return get!(MANIN_CACHE, n) do
+    _manin(n - 1) +
+    x *
+    y *
+    sum(
+      binomial(BigInt(n - 2), i) * _manin(i + 1) * _manin(n - i) for i in 2:(n - 2);
+      init=zero(R),
+    )
+  end
 end
 
 """
@@ -1051,8 +1051,8 @@ true
 ```
 """
 function Mzeronbar(n::Integer)
-    n >= 2 || throw(ArgumentError("n needs to be at least 2"))
-    return from_polynomial(_manin(Int(n)))
+  n >= 2 || throw(ArgumentError("n needs to be at least 2"))
+  return from_polynomial(_manin(Int(n)))
 end
 
 # ── mathematical notation ────────────────────────────────────────────────────────

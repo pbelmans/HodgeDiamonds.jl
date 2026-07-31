@@ -53,23 +53,23 @@ export HodgeDiamond, HochschildHomology
 export from_list, from_matrix, from_polynomial, from_positive
 export hodge_ring, polynomial, pprint
 export arises_from_variety,
-    betti,
-    dimension,
-    euler,
-    hh,
-    hirzebruch,
-    hochschild,
-    holomorphic_euler,
-    homological_unit,
-    is_hodge_symmetric,
-    is_serre_symmetric,
-    lefschetz_power,
-    level,
-    middle,
-    row,
-    signature,
-    sym,
-    symmetric_power
+  betti,
+  dimension,
+  euler,
+  hh,
+  hirzebruch,
+  hochschild,
+  holomorphic_euler,
+  homological_unit,
+  is_hodge_symmetric,
+  is_serre_symmetric,
+  lefschetz_power,
+  level,
+  middle,
+  row,
+  signature,
+  sym,
+  symmetric_power
 export blowup, bundle, mirror
 
 # ── exports from varieties.jl ───────────────────────────────────────────────────
@@ -79,55 +79,55 @@ export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surfac
 export K3, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
 export complete_intersection, cyclic_cover, hypersurface, weighted_hypersurface
 export fano_threefold,
-    fano_variety_intersection_quadrics_even,
-    fano_variety_intersection_quadrics_odd,
-    fano_variety_lines_cubic,
-    gushel_mukai
+  fano_variety_intersection_quadrics_even,
+  fano_variety_intersection_quadrics_odd,
+  fano_variety_lines_cubic,
+  gushel_mukai
 export Mzeronbar
 
 # ── exports from homogeneous.jl ─────────────────────────────────────────────────
 
 export generalised_grassmannian,
-    grassmannian,
-    horospherical,
-    lagrangian_grassmannian,
-    odd_symplectic_grassmannian,
-    orthogonal_grassmannian,
-    partial_flag_variety,
-    symplectic_grassmannian
+  grassmannian,
+  horospherical,
+  lagrangian_grassmannian,
+  odd_symplectic_grassmannian,
+  orthogonal_grassmannian,
+  partial_flag_variety,
+  symplectic_grassmannian
 
 # ── exports from moduli.jl ──────────────────────────────────────────────────────
 
 export K3n, generalised_kummer, hilbn, hilbthree, hilbtwo, nestedhilbn, ogrady6, ogrady10
 export brauer_severi,
-    moduli_parabolic_vector_bundles_rank_two,
-    moduli_vector_bundles,
-    quiver_moduli,
-    quot_scheme_curve,
-    seshadris_desingularisation,
-    slope
+  moduli_parabolic_vector_bundles_rank_two,
+  moduli_vector_bundles,
+  quiver_moduli,
+  quot_scheme_curve,
+  seshadris_desingularisation,
+  slope
 
 # Compile the paths a first session actually walks, so the first computation does not pay
 # for inference. Costs a few seconds of precompilation, saves about a second per call.
 @compile_workload begin
-    S = K3()
-    for X in (S, Pn(2), curve(3), hypersurface(3, 4))
-        repr(MIME("text/plain"), X)
-        betti(X)
-        euler(X)
-        X * X
-        X(1)
-        Matrix(X)
-        arises_from_variety(X)
-    end
-    hilbn(S, 2)
-    hh(S)
-    moduli_vector_bundles(2, 1, 3)
-    grassmannian(2, 5)
-    partial_flag_variety("D4", [1, 2])
-    quiver_moduli([0 3; 0 0], (1, 1))
-    complete_intersection([2, 2], 3)
-    generalised_kummer(2)
+  S = K3()
+  for X in (S, Pn(2), curve(3), hypersurface(3, 4))
+    repr(MIME("text/plain"), X)
+    betti(X)
+    euler(X)
+    X * X
+    X(1)
+    Matrix(X)
+    arises_from_variety(X)
+  end
+  hilbn(S, 2)
+  hh(S)
+  moduli_vector_bundles(2, 1, 3)
+  grassmannian(2, 5)
+  partial_flag_variety("D4", [1, 2])
+  quiver_moduli([0 3; 0 0], (1, 1))
+  complete_intersection([2, 2], 3)
+  generalised_kummer(2)
 end
 
 end # module
