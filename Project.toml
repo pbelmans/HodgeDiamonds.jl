@@ -10,7 +10,7 @@ PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Semisimple = "c99f5fee-6cdb-4bf1-806f-d7690e6ee6f7"
 
 [compat]
-AbstractAlgebra = "0.44, 0.45, 0.46"
+AbstractAlgebra = "0.44 - 0.50"
 Combinatorics = "1"
 PrecompileTools = "1"
 Semisimple = "1.2"
