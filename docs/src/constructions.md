@@ -57,13 +57,17 @@ kummer_resolution
 These are Hodge diamonds of Fano varieties in the sense that their anticanonical bundle is
 ample.
 
-The term "Fano variety" can also mean a variety parametrising linear subspaces on another
-variety. Some of these are Fano in the first sense, others are not always, see for instance
-[`fano_variety_lines_cubic`](@ref).
-
 ```@docs
 fano_threefold
 gushel_mukai
+```
+
+## Fano varieties of linear subspaces
+
+The term "Fano variety" can also mean a variety parametrising linear subspaces on another
+variety. These are moduli spaces, and some of them are Fano in the first sense too.
+
+```@docs
 fano_variety_intersection_quadrics_even
 fano_variety_intersection_quadrics_odd
 fano_variety_lines_cubic

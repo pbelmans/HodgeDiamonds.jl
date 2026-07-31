@@ -702,6 +702,186 @@ function quot_scheme_curve(genus::Integer, quotient_length::Integer, rank::Integ
   )
 end
 
+# ── Fano varieties of linear subspaces ───────────────────────────────────────────
+
+"""
+    fano_variety_lines_cubic(n)
+
+Hodge diamond of the Fano variety of lines on a smooth `n`-dimensional cubic
+hypersurface, for `n` at least 2.
+
+This follows from the "beautiful formula", or ``X``--``F(X)``-relation, due to
+Galkin--Shinder, Theorem 5.1 of [1405.5154v2].
+
+  - [1405.5154v2] Galkin--Shinder, The Fano variety of lines and rationality problem for a
+    cubic hypersurface
+
+# Examples
+
+There are 27 lines on a cubic surface:
+
+```jldoctest
+julia> fano_variety_lines_cubic(2) == 27 * point()
+true
+```
+
+The Fano surface of lines on a cubic threefold is a surface of general type, and the Fano
+fourfold of lines on a cubic fourfold is deformation equivalent to the Hilbert square of a
+K3 surface:
+
+```jldoctest
+julia> fano_variety_lines_cubic(3) == surface(10, 5, 25)
+true
+
+julia> fano_variety_lines_cubic(4) == hilbn(K3(), 2)
+true
+```
+"""
+function fano_variety_lines_cubic(n::Integer)
+  n >= 2 || throw(ArgumentError("dimension needs to be at least 2"))
+  X = hypersurface(3, n)
+  return (hilbtwo(X) - Pn(n) * X)(-2)
+end
+
+"""
+    fano_variety_intersection_quadrics_odd(g, k)
+
+Hodge diamond of the Fano variety of `k`-planes on the intersection of two quadrics in
+``\\mathbb{P}^{2g+1}``, using [MR3689749].
+
+  - [MR3689749] Chen--Vilonen--Xue, On the cohomology of Fano varieties and the Springer
+    correspondence, Adv. Math. 318 (2017), 515--533.
+
+# Examples
+
+For ``k=0`` we have the intersection of two quadrics:
+
+```jldoctest
+julia> fano_variety_intersection_quadrics_odd(2, 0) == complete_intersection([2, 2], 3)
+true
+
+julia> fano_variety_intersection_quadrics_odd(5, 0) == complete_intersection([2, 2], 9)
+true
+```
+
+For ``k=g-2`` we recover the moduli space of rank 2 bundles with odd determinant on a
+curve of genus ``g``, and for ``k=g-1`` the Jacobian of the curve:
+
+```jldoctest
+julia> fano_variety_intersection_quadrics_odd(11, 9) == moduli_vector_bundles(2, 1, 11)
+true
+
+julia> fano_variety_intersection_quadrics_odd(12, 11) == jacobian(12)
+true
+```
+"""
+function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
+  g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
+  k in 0:(g - 1) || throw(ArgumentError("non-empty only for k from 0 to g - 1"))
+  k == g - 1 && return jacobian(g)
+
+  # notation of Chen--Vilonen--Xue
+  i = g - k
+  d = (g - i + 1) * (2i - 1)
+  precision = 3d + 1
+
+  # multiplicity N_i(k, j) of Theorem 1.1, with the q^{-shift} turned into an index shift
+  multiplicity_series = Dict{Int,Vector{BigInt}}()
+  for j in (i - 1):g
+    series = series_one_minus_power(4j, precision)
+    for l in (j - i + 2):(i + j - 2)
+      series = series_multiply(
+        series, series_one_minus_power(2l, precision), precision
+      )
+    end
+    for l in 1:(2i - 2)
+      series = series_multiply(
+        series,
+        series_inverse(series_one_minus_power(2l, precision), precision),
+        precision,
+      )
+    end
+    multiplicity_series[j] = series
+  end
+
+  function multiplicity(index, j)
+    shifted = index + (j - i + 1) * (2i - 1)
+    return 0 <= shifted <= precision ? multiplicity_series[j][shifted + 1] : BigInt(0)
+  end
+
+  jacobian_g = jacobian(g)
+  builder = MPolyBuildCtx(R)
+  for degree in 0:(2d), j in (i - 1):g
+    coefficient = multiplicity(d - degree, j)
+    is_zero(coefficient) && continue
+    # the (g-j)th exterior power of the first cohomology of the curve is the
+    # (g-j)th cohomology of the Jacobian
+    dimensions = row(jacobian_g, g - j)
+    twist = degree - (g - j)
+    iseven(twist) && twist >= 0 ||
+      throw(ErrorException("unexpected parity in the Lefschetz twist"))
+    for m in 0:(g - j)
+      is_zero(dimensions[m + 1]) && continue
+      push_term!(
+        builder,
+        ZZ(coefficient * dimensions[m + 1]),
+        [m + twist ÷ 2, (g - j) - m + twist ÷ 2],
+      )
+    end
+  end
+  return from_polynomial(finish(builder); from_variety=true)
+end
+
+"""
+    fano_variety_intersection_quadrics_even(g, k)
+
+Hodge diamond of the Fano variety of `k`-planes on the intersection of two quadrics in
+``\\mathbb{P}^{2g}``, using [1510.05986v3].
+
+  - [1510.05986v3] Chen--Vilonen--Xue, Springer correspondence, hyperelliptic curves, and
+    cohomology of Fano varieties
+
+# Examples
+
+For ``k=0`` we have the intersection of two quadrics:
+
+```jldoctest
+julia> fano_variety_intersection_quadrics_even(2, 0) == complete_intersection([2, 2], 2)
+true
+
+julia> fano_variety_intersection_quadrics_even(5, 0) == complete_intersection([2, 2], 8)
+true
+```
+
+For ``k=g-1`` we get a finite reduced scheme of length ``4^g``:
+
+```jldoctest
+julia> fano_variety_intersection_quadrics_even(4, 3)
+  256
+```
+"""
+function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
+  g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
+  k in 0:(g - 1) || throw(ArgumentError("non-empty only for k from 0 to g - 1"))
+  i = k + 1
+
+  function multiplicity(degree, j)
+    index = degree - j * (g - i)
+    index < 0 && return BigInt(0)
+    return BigInt(coeff(q_binomial(2g - i - j, i - j), index))
+  end
+
+  builder = MPolyBuildCtx(R)
+  for degree in 0:(i * (2g - 2i))
+    coefficient = sum(
+      multiplicity(degree, j) * binomial(BigInt(2g + 1), j) for j in 0:i;
+      init=BigInt(0),
+    )
+    is_zero(coefficient) || push_term!(builder, ZZ(coefficient), [degree, degree])
+  end
+  return from_polynomial(finish(builder); from_variety=true)
+end
+
 # ── quiver moduli ────────────────────────────────────────────────────────────────
 
 const Rv, _v_generator = polynomial_ring(QQ, :v)
