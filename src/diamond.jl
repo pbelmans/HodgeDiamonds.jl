@@ -326,7 +326,7 @@ true
 """
 function is_hodge_symmetric(X::HodgeDiamond)
   M = Matrix(X)
-  return M == permutedims(M)
+  return M == transpose(M)
 end
 
 """
@@ -349,9 +349,8 @@ false
 ```
 """
 function is_serre_symmetric(X::HodgeDiamond)
-  d = _top_degree(X)
   M = Matrix(X)
-  return all(M[p + 1, q + 1] == M[d - p + 1, d - q + 1] for p in 0:d, q in 0:d)
+  return M == reverse(M)
 end
 
 """
@@ -360,8 +359,10 @@ end
 Whether the Hodge diamond could arise from a smooth projective variety: it satisfies
 Hodge symmetry and Serre symmetry, and carries no Lefschetz twist.
 """
-arises_from_variety(X::HodgeDiamond) =
-  is_hodge_symmetric(X) && is_serre_symmetric(X) && lefschetz_power(X) == 0
+function arises_from_variety(X::HodgeDiamond)
+  M = Matrix(X)                               # built once, for both symmetries
+  return M == transpose(M) && M == reverse(M) && is_zero(lefschetz_power(X))
+end
 
 """
     lefschetz_power(X)
