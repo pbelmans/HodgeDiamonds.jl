@@ -273,9 +273,14 @@ end
 
 # ── small combinatorics ─────────────────────────────────────────────────────────
 
-"Compositions of `r`, that is ordered tuples of positive integers summing to `r`."
+"""
+Compositions of `r`, that is ordered tuples of positive integers summing to `r`.
+
+A composition is a choice of cut points in `1:(r - 1)`, so the powerset gives all
+``2^{r-1}`` of them without the recursion recomputing its own sub-results.
+"""
 compositions(r::Int) =
-  r == 0 ? [Int[]] : [vcat(k, rest) for k in 1:r for rest in compositions(r - k)]
+  is_zero(r) ? [Int[]] : [diff([0; cuts; r]) for cuts in powerset(1:(r - 1))]
 
 "Multiplicities of the parts of a partition, as a `part => multiplicity` dictionary."
 function multiplicities(partition)
