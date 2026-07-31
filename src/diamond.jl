@@ -710,7 +710,7 @@ hh(X::HodgeDiamond) = hochschild(X)
 # ── operations ──────────────────────────────────────────────────────────────────
 
 """
-    blowup(X, Y; codimension = nothing)
+    blowup(X, Y; codimension = dimension(X) - dimension(Y))
 
 Hodge diamond of the blowup of `X` in a centre with Hodge diamond `Y`.
 
@@ -728,10 +728,11 @@ true
 ```
 """
 function blowup(
-  X::HodgeDiamond, Y::HodgeDiamond; codimension::Union{Nothing,Integer}=nothing
+  X::HodgeDiamond,
+  Y::HodgeDiamond;
+  codimension::Integer=dimension(X) - dimension(Y),
 )
-  depth = codimension === nothing ? dimension(X) - dimension(Y) : codimension
-  return X + sum((Y(i) for i in 1:(depth - 1)); init=zero(HodgeDiamond))
+  return X + sum((Y(i) for i in 1:(codimension - 1)); init=zero(HodgeDiamond))
 end
 
 """
