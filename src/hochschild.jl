@@ -213,10 +213,10 @@ function symmetric_power(h::HochschildHomology, k::Integer)
   terms = [(i, h[i]) for i in (-n):n if !is_zero(h[i])]
   total = Dict{Int,BigInt}()
   for partition in partitions(Int(k))
-    counts = multiplicities(partition)
     factor = Dict(0 => BigInt(1))
-    for part in 1:maximum(keys(counts); init=0)
-      factor = _convolve(factor, _symmetric_summand(terms, get(counts, part, 0)))
+    # only the multiplicities of the parts play a role, not the parts themselves
+    for count in values(multiplicities(partition))
+      factor = _convolve(factor, _symmetric_summand(terms, count))
     end
     for (exponent, coefficient) in factor
       total[exponent] = get(total, exponent, BigInt(0)) + coefficient
