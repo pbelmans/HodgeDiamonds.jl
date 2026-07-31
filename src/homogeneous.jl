@@ -146,13 +146,34 @@ end
 Hodge diamond of the orthogonal Grassmannian ``\\operatorname{OGr}(k,n)`` of
 `k`-dimensional subspaces of an `n`-dimensional vector space, isotropic with respect to a
 non-degenerate symmetric bilinear form.
+
+# Examples
+
+Isotropic lines form a quadric hypersurface:
+
+```jldoctest
+julia> all(orthogonal_grassmannian(1, n) == hypersurface(2, n - 2) for n in 4:9)
+true
+```
+
+The dimension is ``k(n-k)-\\binom{k+1}{2}``:
+
+```jldoctest
+julia> [dimension(orthogonal_grassmannian(k, 10)) for k in 1:4]
+4-element Vector{Int64}:
+  8
+ 13
+ 15
+ 14
+```
 """
 function orthogonal_grassmannian(k::Integer, n::Integer)
   half = n ÷ 2
   if iseven(n)
     k < half || throw(ArgumentError("need k < n/2 for even n"))
-    # exceptional case: a submaximal parabolic is needed
-    vertices = k - 1 == half ? (1:(half - 2)) : [i for i in 1:half if i != k]
+    # an isotropic subspace of dimension n/2 - 1 lies in exactly one maximal isotropic
+    # subspace of each of the two families, so it is the two fork vertices that go
+    vertices = k == half - 1 ? (1:(half - 2)) : [i for i in 1:half if i != k]
     return partial_flag_variety("D$half", vertices)
   end
   k <= half || throw(ArgumentError("need k ≤ (n-1)/2 for odd n"))

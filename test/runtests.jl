@@ -293,11 +293,17 @@ const R, x, y = hodge_ring()
     @test lagrangian_grassmannian(1) == Pn(1)
     @test symplectic_grassmannian(1, 2) == Pn(1)
     @test orthogonal_grassmannian(1, 6) == hypersurface(2, 4)
-    @test orthogonal_grassmannian(1, 4) == Pn(1)
-    @test dimension(orthogonal_grassmannian(2, 6)) == 3
-    @test dimension(orthogonal_grassmannian(2, 8)) == 9
+    # isotropic lines form a quadric, in particular OGr(1, 4) is the quadric surface
+    @test all(orthogonal_grassmannian(1, n) == hypersurface(2, n - 2) for n in 4:9)
+    # dim OGr(k, n) = k(n - k) - binomial(k + 1, 2), including the k = n/2 - 1 case where
+    # both fork vertices of the D-diagram have to go
+    @test all(
+      dimension(orthogonal_grassmannian(k, n)) == k * (n - k) - (k * (k + 1)) ÷ 2 for
+      n in 4:11 for k in 1:((n - 1) ÷ 2) if isodd(n) || k < n ÷ 2
+    )
+    @test_throws ArgumentError orthogonal_grassmannian(3, 6)
+    @test_throws ArgumentError orthogonal_grassmannian(3, 5)
     @test odd_symplectic_grassmannian(1, 5) == Pn(4)
-    @test dimension(orthogonal_grassmannian(2, 7)) == 7
     @test horospherical("X5") == horospherical("G2", 1, 2)
     @test dimension(horospherical("X4")) == 23
 
