@@ -351,7 +351,16 @@ determinant of the given degree on a curve of the given genus, using Corollary 5
 For the moduli space with non-fixed determinant of degree `d`, take
 `jacobian(g) * moduli_vector_bundles(r, d, g)`.
 
-The rank must be at least 2, the genus at least 2, and rank and degree coprime.
+If rank and degree are not coprime the moduli space is singular, and what is returned is
+its *intersection* Hodge diamond, using Theorem 1.1 of [MR5069270]. That agrees with the
+ordinary one in the smooth coprime case, so this is a single formula throughout, but
+beware that for non-coprime input the answer is not the Hodge diamond of a variety and
+constructions like [`hilbn`](@ref) do not apply to it.
+
+  - [MR5069270] Mozgovoy--Reineke, Intersection cohomology of moduli spaces of vector
+    bundles over curves. Moduli 3 (2026), paper no. e9.
+
+The rank must be at least 2 and the genus at least 2.
 
 # Examples
 
@@ -362,19 +371,32 @@ Rank 2, degree 1 and genus 2 is famously the intersection of two quadrics in
 julia> moduli_vector_bundles(2, 1, 2) == complete_intersection([2, 2], 3)
 true
 ```
+
+In rank 2 and degree 0 the moduli space is singular along the strictly semistable locus,
+and its intersection cohomology is much smaller than the cohomology of Seshadri's
+desingularisation:
+
+```jldoctest
+julia> euler(moduli_vector_bundles(2, 0, 3))
+-16
+
+julia> euler(seshadris_desingularisation(3))
+112
+```
 """
 function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
   r, d, g = Int(rank), Int(degree), Int(genus)
   r >= 2 || throw(ArgumentError("rank needs to be at least 2"))
   g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
-  gcd(r, d) == 1 || throw(ArgumentError("rank and degree need to be coprime"))
+  isone(gcd(r, d)) || return HodgeDiamond(_intersection_moduli_vector_bundles(r, d, g))
   total = _del_bano(r, d, g)
   return HodgeDiamond(dense_to_polynomial(total); from_variety=true)
 end
 
-function _del_bano(r::Int, d::Int, g::Int)
-  N = (r^2 - 1) * (g - 1)                     # dimension of the moduli space
-
+# `N` is the truncation bidegree, by default the dimension of the moduli space. Coprime
+# rank and degree make the answer a polynomial of that bidegree, so nothing is lost; for
+# non-coprime input the sum is an infinite series and the caller picks the precision.
+function _del_bano(r::Int, d::Int, g::Int, N::Int=(r^2 - 1) * (g - 1))
   # del Baño's second factor splits over the parts of the composition, so each part
   # value is computed once instead of once per composition
   # one scratch integer and two buffers, reused for every product below. Whatever outlives
@@ -484,6 +506,156 @@ function _del_bano(r::Int, d::Int, g::Int)
   end
 
   return total
+end
+
+# ── intersection cohomology of the moduli space ──────────────────────────────────
+#
+# For non-coprime rank and degree the moduli space is singular and del Baño's formula no
+# longer computes anything about it. Mozgovoy--Reineke express its intersection cohomology
+# through the Donaldson--Thomas invariants of the curve. Write ``e=\gcd(r,d)``,
+# ``r_0=r/e``, ``d_0=d/e``, let ``\mathfrak{M}(r,d)`` be the stack of semistable bundles,
+# and put
+#
+#     Q = 1 + \sum_{m\ge1} L^{(1-g)(mr_0)^2/2} E(\mathfrak{M}(mr_0,md_0)) s^m,  s = t^{r_0}.
+#
+# Then Theorem 1.1 together with (5.2) of [MR5069270] says
+#
+#     E(IH^*(M(r,d))) = L^{\dim/2} (L^{1/2}-L^{-1/2}) [\Log Q]_{s^e},
+#
+# with Log the plethystic logarithm and dim = (g-1)r^2+1. Note that this is the moduli
+# space with non-fixed determinant.
+#
+# Two rewritings keep the computation inside the integral dense machinery of internals.jl.
+#
+# First, E(\mathfrak{M}(r,d)) = E(Jac) / (L-1) times del Baño's composition sum. Zagier's
+# formula for the stack (Theorem 5.4 of [MR5069270]) is term by term del Baño's,
+# off by exactly one factor of the Jacobian and one of L-1, and neither derivation uses
+# coprimality; del Baño's fractional parts are those of -r_{\le i}d/r rather than
+# r_{\le i}d/r, which is the harmless replacement of d by -d.
+#
+# Second, the half powers of L are an artefact of the variable s. Substituting
+# ``s = L^{(g-1)r_0^2/2}\tilde s`` makes the coefficient of ``\tilde s^m`` equal to
+# ``L^{-K_m} E(\mathfrak{M}(mr_0,md_0))`` with ``K_m = (g-1)r_0^2m(m-1)/2`` an integer, and
+# collapses every prefactor above:
+#
+#     E(IH^*(M(r,d))) = (L-1) G,    where [\Log Q]_{\tilde s^e} = L^{-K_e} G.
+#
+# For coprime rank and degree G is E(\mathfrak{M}(r,d)) and this is E(M(r,d)) again, which
+# is what `_del_bano` computes; the tests check that.
+#
+# The one place where the odd degree of ``L^{1/2}`` survives is the Adams operation on the
+# rescaled variable: ``\psi^n(L^{1/2}) = (-1)^{n+1}L^{n/2}``, hence
+# ``\psi^n(\tilde s) = (-1)^{(n+1)c}\tilde s^n`` with ``c = (g-1)r_0^2``.
+
+"Möbius function of a positive integer, by trial division."
+function _mobius(n::Int)
+  n >= 1 || throw(ArgumentError("argument needs to be positive"))
+  sign, remaining, divisor = 1, n, 2
+  while divisor * divisor <= remaining
+    if is_zero(remaining % divisor)
+      remaining ÷= divisor
+      is_zero(remaining % divisor) && return 0
+      sign = -sign
+    end
+    divisor += 1
+  end
+  isone(remaining) || (sign = -sign)
+  return sign
+end
+
+# Adams operation ``\psi^n`` on a dense series. On E-polynomials it is the substitution
+# ``u\mapsto u^n``, ``v\mapsto v^n``; since ``u=-x`` and ``v=-y`` that renumbers the
+# exponents and, for even `n`, signs the odd-degree terms.
+function _adams(dense::Matrix{T}, n::Int, N::Int) where {T<:Number}
+  image = zero_coefficients(T, N + 1)
+  for (value, exponents) in dense_terms(dense)
+    iszero(value) && continue
+    i, j = n * exponents[1], n * exponents[2]
+    (i <= N && j <= N) || continue
+    negate = iseven(n) && isodd(exponents[1] + exponents[2])
+    image[i + 1, j + 1] += negate ? -value : value
+  end
+  return image
+end
+
+"Multiply a dense series by ``L^k = (xy)^k``, truncated at bidegree `N`."
+function _lefschetz_shift(dense::Matrix{T}, k::Int, N::Int) where {T<:Number}
+  k >= 0 || throw(ArgumentError("shift needs to be non-negative"))
+  iszero(k) && return dense
+  shifted = zero_coefficients(T, N + 1)
+  for j in 1:(N + 1 - k), i in 1:(N + 1 - k)
+    iszero(dense[i, j]) || (shifted[i + k, j + k] = dense[i, j])
+  end
+  return shifted
+end
+
+# Product of two series in ``\tilde s``, both in the normalisation where `A[m]` stands for
+# the coefficient ``L^{-K_m}A[m]``. The shifts to reinstate are non-negative because `K` is
+# convex: ``K_i + K_j \le K_{i+j}``.
+function _shifted_convolve(A::Vector{M}, B::Vector{M}, K, N::Int) where {M<:Matrix}
+  product = [zero_coefficients(eltype(M), N + 1) for _ in eachindex(A)]
+  for m in eachindex(A), i in 1:(m - 1)
+    j = m - i
+    piece = multiply_truncated(A[i], B[j], N)
+    product[m] .+= _lefschetz_shift(piece, K(m) - K(i) - K(j), N)
+  end
+  return product
+end
+
+function _intersection_moduli_vector_bundles(r::Int, d::Int, g::Int)
+  T = RationalCoefficient
+  e = gcd(r, d)
+  r0, d0 = r ÷ e, d ÷ e
+  N = (g - 1) * r^2 + 1                       # dimension of M(r,d), non-fixed determinant
+  c = (g - 1) * r0^2
+  K(m) = c * m * (m - 1) ÷ 2
+  epsilon(n) = (isodd(n) || iseven(c)) ? 1 : -1
+
+  # the coefficients of Q - 1 in the normalisation above, that is E(𝔐(m r0, m d0))
+  jacobian_class = polynomial_to_dense(T, polynomial(jacobian(g)), N)
+  geometric = series_geometric(T, 1, N)        # 1/(1-L), so 1/(L-1) is its negative
+  stack = map(1:e) do m
+    piece = multiply_truncated(
+      jacobian_class, map(T, _del_bano(m * r0, m * d0, g, N)), N
+    )
+    return -multiply_by_lefschetz_series(piece, geometric, N)
+  end
+
+  # the ordinary logarithm log(1 + x) = Σ_k (-1)^{k-1}/k x^k, truncated at s̃^e
+  logarithm = [zero_coefficients(T, N + 1) for _ in 1:e]
+  power = stack
+  for k in 1:e
+    scale = T((-1)^(k - 1), k)
+    for m in k:e
+      logarithm[m] .+= scale .* power[m]
+    end
+    k < e && (power = _shifted_convolve(power, stack, K, N))
+  end
+
+  # and the plethystic one, Log(1 + x) = Σ_n μ(n)/n ψ^n(log(1 + x)); of that only the
+  # divisors of e reach s̃^e, and n K_{e/n} ≤ K_e keeps the shift non-negative
+  total = copy(logarithm[e])
+  for n in 2:e
+    (is_zero(e % n) && !iszero(_mobius(n))) || continue
+    m = e ÷ n
+    image = _lefschetz_shift(_adams(logarithm[m], n, N), K(e) - n * K(m), N)
+    total .+= T(_mobius(n) * epsilon(n)^m, n) .* image
+  end
+
+  # E(IH^*(M(r,d))) = (L-1) G, then divide out the Jacobian for the fixed determinant
+  # convention of `moduli_vector_bundles`
+  total = _lefschetz_shift(total, 1, N) .- total
+  fixed = multiply_truncated(total, inverse_truncated(jacobian_class, N), N)
+
+  # the quotient must be a polynomial of the bidegree of the fixed determinant moduli
+  # space, which is a real check on both the division and everything upstream of it
+  dimension = (r^2 - 1) * (g - 1)
+  for j in 1:(N + 1), i in 1:(N + 1)
+    (i > dimension + 1 || j > dimension + 1) &&
+      !iszero(fixed[i, j]) &&
+      throw(ErrorException("intersection cohomology in bidegree ($(i - 1), $(j - 1))"))
+  end
+  return _to_integral_polynomial(fixed)
 end
 
 """

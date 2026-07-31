@@ -234,6 +234,36 @@ const R, x, y = hodge_ring()
     end
     @test seshadris_desingularisation(2) == Pn(3)
     @test euler(seshadris_desingularisation(3)) == 112
+
+    # for non-coprime rank and degree the answer is intersection cohomology, via
+    # Mozgovoy--Reineke; the two formulas have to agree wherever both apply
+    for (rank, degree, genus) in
+        [(2, 1, 2), (2, 1, 3), (3, 1, 2), (3, 2, 3), (2, 3, 4), (4, 1, 2)]
+      @test HodgeDiamonds._intersection_moduli_vector_bundles(rank, degree, genus) ==
+        polynomial(moduli_vector_bundles(rank, degree, genus))
+    end
+    # rank 2 with trivial determinant, matching the closed form of Kiem--Li [MR2099191]
+    @test Matrix(moduli_vector_bundles(2, 0, 3)) == [
+      1 0 0 0 0 0 0
+      0 1 3 0 0 0 0
+      0 3 1 3 0 0 0
+      0 0 3 2 3 0 0
+      0 0 0 3 1 3 0
+      0 0 0 0 3 1 0
+      0 0 0 0 0 0 1
+    ]
+    for (rank, degree, genus) in [(2, 0, 3), (3, 0, 2), (4, 2, 2), (6, 3, 2)]
+      X = moduli_vector_bundles(rank, degree, genus)
+      n = (rank^2 - 1) * (genus - 1)
+      @test dimension(X) == n
+      @test X[0, 0] == 1
+      # intersection cohomology of a projective variety is still Hodge symmetric and
+      # satisfies Poincaré duality
+      @test all(X[p, q] == X[q, p] == X[n - p, n - q] for p in 0:n, q in 0:n)
+      @test all(X[p, q] >= 0 for p in 0:n, q in 0:n)
+    end
+    # the degree matters, not just its gcd with the rank
+    @test moduli_vector_bundles(4, 0, 2) != moduli_vector_bundles(4, 2, 2)
     @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 5)) ==
       fano_variety_intersection_quadrics_even(2, 0)
     @test moduli_parabolic_vector_bundles_rank_two(0, fill(1//2, 7)) ==
