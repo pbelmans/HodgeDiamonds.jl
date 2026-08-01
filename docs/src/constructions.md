@@ -23,6 +23,7 @@ curve
 symn
 jacobian
 moduli_vector_bundles
+moduli_higgs_bundles
 seshadris_desingularisation
 narasimhan_ramanans_desingularisation
 kirwans_desingularisation

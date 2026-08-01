@@ -330,6 +330,54 @@ const R, x, y = hodge_ring()
     @test dimension(quot_scheme_curve(2, 3, 2)) == 6
   end
 
+  @testset "moduli of Higgs bundles on curves" begin
+    # in rank 1 the moduli space is the cotangent bundle to the Jacobian, and in genus 1
+    # the cotangent bundle to the curve, whatever the rank
+    @test all(
+      moduli_higgs_bundles(1, degree, genus) == jacobian(genus)(genus) for degree in -3:3,
+      genus in 1:5
+    )
+    @test all(moduli_higgs_bundles(rank, 1, 1) == curve(1)(1) for rank in 1:5)
+
+    # reversing the compactly supported Betti numbers gives the Poincaré polynomial,
+    # which is known in rank 2 by Hitchin's computation and in rank 3 by Gothen's; the
+    # values are those tabulated in section 6 of [1104.5698], and the one for rank 2 and
+    # genus 3 is Hitchin's polynomial quoted in [math/0406380] times the Jacobian
+    poincare(X) = reverse(betti(X))
+    for (rank, genus, expected) in [
+      (2, 2, [1, 4, 7, 12, 25, 40, 47, 44, 30, 12, 2]),
+      (
+        3,
+        2,
+        [
+          1, 4, 7, 12, 26, 48, 77, 120, 188, 292, 424, 580, 768, 944, 1026, 956, 729,
+          428, 180, 48, 6,
+        ],
+      ),
+      (
+        2,
+        3,
+        [
+          1, 6, 16, 32, 68, 134, 219, 340, 532, 768, 1013, 1248, 1344, 1158, 765, 380,
+          135, 30, 3,
+        ],
+      ),
+    ]
+      X = moduli_higgs_bundles(rank, 1, genus)
+      d = 2 * rank^2 * (genus - 1) + 2
+      @test poincare(X)[1:(d + 1)] == expected
+      # the moduli space is semiprojective, so its cohomology vanishes above the
+      # dimension, and the compactly supported one below it
+      @test iszero(poincare(X)[(d + 2):end])
+      @test X[d, d] == 1
+      @test euler(X) == 0
+      @test all(X[p, q] == X[q, p] >= 0 for p in 0:d, q in 0:d)
+    end
+
+    @test_throws ArgumentError moduli_higgs_bundles(2, 2, 3)
+    @test_throws ArgumentError moduli_higgs_bundles(2, 1, 0)
+  end
+
   @testset "homogeneous varieties" begin
     @test partial_flag_variety("A5", [2, 3, 4, 5]) == Pn(5)
     @test partial_flag_variety("B5", [2, 3, 4, 5]) == hypersurface(2, 9)

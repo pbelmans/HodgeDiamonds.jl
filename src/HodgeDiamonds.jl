@@ -102,6 +102,7 @@ export generalised_grassmannian,
 export K3n, generalised_kummer, hilbn, hilbthree, hilbtwo, nestedhilbn, ogrady6, ogrady10
 export brauer_severi,
   kirwans_desingularisation,
+  moduli_higgs_bundles,
   moduli_parabolic_vector_bundles_rank_two,
   moduli_vector_bundles,
   narasimhan_ramanans_desingularisation,

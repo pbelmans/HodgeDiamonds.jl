@@ -924,6 +924,260 @@ function quot_scheme_curve(genus::Integer, quotient_length::Integer, rank::Integ
   )
 end
 
+# ── moduli of Higgs bundles on curves ────────────────────────────────────────────
+#
+# Hausel--Rodriguez-Villegas conjecture the mixed Hodge polynomial of the moduli space of
+# Higgs bundles; Mozgovoy restates it in the Grothendieck ring, which is the shape we can
+# compute in. Write ``c=g-1``, let ``Z_X`` be the motivic zeta function of the curve, so
+# that ``Z_X(s)=\sum_j[\mathrm{Sym}^jX]s^j``, and for a partition ``\lambda`` of ``m`` let
+# ``a``, ``l``, ``h`` be the arm, leg and hook length of a box. Mozgovoy's Conjecture 2
+# reads
+#
+#     \sum_\lambda t^{(1-g)(2n(\lambda)+|\lambda|)}\prod_{x\in\lambda}Z_X(t^{h}L^{a}) T^{|\lambda|}
+#       = \Exp\Bigl(\sum_{n\ge1}\frac{t^{(1-g)n^2}H_n(t)}{(1-t)(1-tL)}T^n\Bigr),
+#     [M(n,d)] = L^{\dim/2}H_n(1),   \dim M(n,d) = 2(cn^2+1),
+#
+# with ``n(\lambda)=\sum_xl(x)`` and ``\Exp`` the plethystic exponential, whose Adams
+# operations raise ``t`` and ``T`` to the ``k``th power and act on the Hodge--Poincaré
+# polynomial as `_adams`.
+#
+# The powers of ``t`` are negative for ``g\ge2``, which no power series machinery here
+# handles. Rescaling ``T`` cannot clear them, as the exponent is quadratic in the degree,
+# so instead we carry the coefficient of ``T^m`` in the normalisation where it stands for
+# ``t^{-K_m}`` times what is stored, with ``K_m=cm^2``. That is exactly the trick of
+# `_intersection_moduli_vector_bundles`, in the variable ``t`` rather than in ``L``: the
+# shifts to reinstate in a product are ``K_{i+j}-K_i-K_j=2cij\ge0``, those of an Adams
+# operation are ``K_{km}-kK_m=ckm^2(k-1)\ge0``, and the right hand side normalises to
+# ``H_n(t)/((1-t)(1-tL))``, free of any power of ``t``. Every partition of ``m`` then
+# contributes ``t^{c(m^2-m-2n(\lambda))}`` with a non-negative exponent, zero exactly for
+# ``\lambda=1^m``.
+
+#: `series[j + 1]` is the coefficient of ``t^j``, a dense bivariate polynomial
+const HiggsSeries = Vector{Matrix{RationalCoefficient}}
+
+_higgs_zero(N::Int, precision::Int) =
+  [zero_coefficients(RationalCoefficient, N + 1) for _ in 0:precision]
+
+function _higgs_one(N::Int, precision::Int)
+  series = _higgs_zero(N, precision)
+  series[1][1, 1] = one(RationalCoefficient)
+  return series
+end
+
+"The motivic zeta function of the curve evaluated at ``t^hL^a``."
+function _higgs_zeta(g::Int, h::Int, a::Int, N::Int, precision::Int)
+  series = _higgs_zero(N, precision)
+  for j in 0:(precision ÷ h)
+    j * a <= N || break
+    symmetric = polynomial_to_dense(RationalCoefficient, polynomial(symn(g, j)), N)
+    series[j * h + 1] = lefschetz_shift(symmetric, j * a, N)
+  end
+  return series
+end
+
+function _higgs_multiply(A::HiggsSeries, B::HiggsSeries, N::Int, precision::Int)
+  product = _higgs_zero(N, precision)
+  for i in 0:precision
+    all(iszero, A[i + 1]) && continue
+    for j in 0:(precision - i)
+      all(iszero, B[j + 1]) && continue
+      product[i + j + 1] .+= multiply_truncated(A[i + 1], B[j + 1], N)
+    end
+  end
+  return product
+end
+
+"Add `scale * t^shift * source` into `destination`."
+function _higgs_add_shifted!(
+  destination::HiggsSeries,
+  source::HiggsSeries,
+  shift::Int,
+  scale::RationalCoefficient=one(RationalCoefficient),
+)
+  for j in 0:(length(source) - 1 - shift)
+    destination[j + shift + 1] .+= scale .* source[j + 1]
+  end
+  return destination
+end
+
+"Adams operation ``\\psi^k``, raising ``t`` to the ``k``th power as well."
+function _higgs_adams(A::HiggsSeries, k::Int, N::Int, precision::Int)
+  image = _higgs_zero(N, precision)
+  for j in 0:(precision ÷ k)
+    image[k * j + 1] = _adams(A[j + 1], k, N)
+  end
+  return image
+end
+
+"Product of two series in `T`, in the normalisation where `A[m]` stands for ``t^{-K_m}A[m]``."
+function _higgs_convolve(A::Vector{HiggsSeries}, B::Vector{HiggsSeries}, K, N, precision)
+  product = [_higgs_zero(N, precision) for _ in eachindex(A)]
+  for m in eachindex(A), i in 1:(m - 1)
+    _higgs_add_shifted!(
+      product[m],
+      _higgs_multiply(A[i], B[m - i], N, precision),
+      K(m) - K(i) - K(m - i),
+    )
+  end
+  return product
+end
+
+"The contribution ``t^{c(m^2-m-2n(\\lambda))}\\prod_xZ_X(t^{h}L^{a})`` of one partition."
+function _higgs_partition(g::Int, partition, cache, N::Int, precision::Int)
+  m = sum(partition)
+  conjugate = [count(>=(j), partition) for j in 1:partition[1]]
+  legs = 0
+  term = _higgs_one(N, precision)
+  for i in eachindex(partition), j in 1:partition[i]
+    arm, leg = partition[i] - j, conjugate[j] - i
+    legs += leg
+    zeta = get!(cache, (arm + leg + 1, arm)) do
+      _higgs_zeta(g, arm + leg + 1, arm, N, precision)
+    end
+    term = _higgs_multiply(term, zeta, N, precision)
+  end
+  shifted = _higgs_zero(N, precision)
+  return _higgs_add_shifted!(shifted, term, (g - 1) * (m^2 - m - 2 * legs))
+end
+
+"""
+    moduli_higgs_bundles(rank, degree, genus)
+
+Conjectural Hodge diamond of the moduli space of semistable Higgs bundles of the given rank
+and degree on a curve of the given genus, where rank and degree are coprime and the genus
+is at least 1.
+
+This is Conjecture 5.6 of [math/0406380], in the motivic form of Conjecture 2 of
+[1104.5698], which is what is implemented. It is a *conjecture*: the answer is proven only
+in rank 2 by Hitchin's computation, in rank 3 by Gothen's, and in rank 4 for small genus.
+You have been warned.
+
+  - [math/0406380] Hausel--Rodriguez-Villegas, Mixed Hodge polynomials of character
+    varieties
+  - [1104.5698] Mozgovoy, Solutions of the motivic ADHM recursion formula
+
+The moduli space is smooth of dimension ``2n^2(g-1)+2``, but it is not projective, so what
+a Hodge diamond can mean for it needs saying. Its cohomology is nevertheless pure, by
+Theorem 2.1 of [math/0406380]: ``H^k`` carries a pure Hodge structure of weight ``k``, so
+Hodge numbers ``\\mathrm{h}^{p,q}`` with ``p+q=k`` make sense as for a projective variety.
+What is returned are the Hodge numbers of cohomology *with compact support*, which is what
+the class in the Grothendieck ring computes, so that the entry in position ``(p,q)`` is
+``\\dim\\mathrm{Gr}^p_F\\mathrm{H}^{p+q}_{\\mathrm{c}}``. Poincaré duality recovers the
+ordinary ones as ``\\mathrm{h}^{p,q}=\\mathrm{h}_{\\mathrm{c}}^{d-p,d-q}``, with ``d`` the
+dimension. The diamond is Hodge symmetric but not Serre symmetric, and does not arise from
+a smooth projective variety.
+
+Beware that [`dimension`](@ref) returns ``d/2`` rather than ``d``: the whole class is
+divisible by ``\\mathbb{L}^{d/2}``, and the convention here is to untwist by the maximal
+power of the Lefschetz class before measuring. Use ``2n^2(g-1)+2`` for ``d``, or read it
+off the top corner, which is ``\\mathrm{h}_{\\mathrm{c}}^{d,d}=1``.
+
+The answer does not depend on the degree, only on its being coprime to the rank.
+Hausel--Rodriguez-Villegas state their conjecture for the moduli space attached to
+``\\mathrm{PGL}_n``, which differs from this one by the factor `jacobian(genus)(genus)` of
+the cotangent bundle to the Jacobian.
+
+# Examples
+
+In rank 1 the moduli space is the cotangent bundle to the Jacobian:
+
+```jldoctest
+julia> all(moduli_higgs_bundles(1, d, g) == jacobian(g)(g) for d in -2:2, g in 1:5)
+true
+```
+
+In genus 1 it is the cotangent bundle to the curve, in every rank coprime to the degree:
+
+```jldoctest
+julia> all(moduli_higgs_bundles(n, 1, 1) == curve(1)(1) for n in 1:4)
+true
+```
+
+Reversing the Betti numbers turns compact support into ordinary cohomology, giving the
+Poincaré polynomial. In rank 2 and genus 2 it is Hitchin's, of degree the dimension 10,
+so that half of the diamond is empty:
+
+```jldoctest
+julia> P = reverse(betti(moduli_higgs_bundles(2, 1, 2)));
+
+julia> P[1:11] == [1, 4, 7, 12, 25, 40, 47, 44, 30, 12, 2] && iszero(P[12:end])
+true
+```
+
+The Euler characteristic vanishes, as the moduli space fibres over the cotangent bundle to
+the Jacobian:
+
+```jldoctest
+julia> euler(moduli_higgs_bundles(3, 1, 2))
+0
+```
+"""
+function moduli_higgs_bundles(rank::Integer, degree::Integer, genus::Integer)
+  n, d, g = Int(rank), Int(degree), Int(genus)
+  n >= 1 || throw(ArgumentError("rank needs to be at least 1"))
+  g >= 1 || throw(ArgumentError("genus needs to be at least 1"))
+  isone(gcd(n, d)) || throw(ArgumentError("rank and degree need to be coprime"))
+
+  c = g - 1
+  half = c * n^2 + 1                    # half the dimension of the moduli space
+  # the conjecture says that `H_n` has degree twice that, so one more term is a check
+  precision = 2 * half + 1
+  # and that `H_n(1)` has bidegree at most half the dimension, so again one more is a check
+  N = half + 1
+  K(m) = c * m^2
+
+  cache = Dict{Tuple{Int,Int},HiggsSeries}()
+  series = [
+    sum(_higgs_partition(g, partition, cache, N, precision) for partition in partitions(m))
+    for m in 1:n
+  ]
+
+  # the ordinary logarithm log(1 + x) = Σ_k (-1)^{k-1}/k x^k, truncated at T^n
+  logarithm = [_higgs_zero(N, precision) for _ in 1:n]
+  power = series
+  for k in 1:n
+    scale = RationalCoefficient((-1)^(k - 1), k)
+    for m in k:n
+      _higgs_add_shifted!(logarithm[m], power[m], 0, scale)
+    end
+    k < n && (power = _higgs_convolve(power, series, K, N, precision))
+  end
+
+  # and the plethystic one, Log(1 + x) = Σ_k μ(k)/k ψ^k(log(1 + x)), of which only the
+  # divisors of `n` reach T^n
+  total = logarithm[n]
+  for k in 2:n
+    iszero(n % k) || continue
+    mobius = _mobius(k)
+    iszero(mobius) && continue
+    m = n ÷ k
+    _higgs_add_shifted!(
+      total,
+      _higgs_adams(logarithm[m], k, N, precision),
+      K(n) - k * K(m),
+      RationalCoefficient(mobius, k),
+    )
+  end
+
+  # H_n(t) = (1 - t)(1 - tL) Log_n, of degree the dimension of the moduli space
+  H = _higgs_zero(N, precision)
+  for j in 0:precision
+    H[j + 1] .+= total[j + 1]
+    j >= 1 && (H[j + 1] .-= total[j] .+ lefschetz_shift(total[j], 1, N))
+    j >= 2 && (H[j + 1] .+= lefschetz_shift(total[j - 1], 1, N))
+  end
+  all(iszero, H[precision + 1]) ||
+    error("the conjectural polynomial reaches beyond degree $(2 * half)")
+
+  value = sum(H[1:precision])           # H_n(1)
+  all(iszero, @view value[N + 1, :]) && all(iszero, @view value[:, N + 1]) ||
+    error("the conjectural polynomial reaches beyond bidegree ($half, $half)")
+
+  return HodgeDiamond(
+    _to_integral_polynomial(lefschetz_shift(value, half, 2 * half))
+  )
+end
+
 # ── Fano varieties of linear subspaces ───────────────────────────────────────────
 
 """
