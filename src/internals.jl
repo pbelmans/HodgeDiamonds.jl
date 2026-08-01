@@ -400,12 +400,11 @@ function accumulate_scaled!(
   destination::Matrix{BigInt},
   source::Matrix{BigInt},
   coefficient::BigInt,
-  shift_a,
-  shift_b,
-  width,
+  shift_a::Int,
+  shift_b::Int,
+  scratch::BigInt,
 )
-  scratch = BigInt()
-  @inbounds for j in 1:width, i in 1:width
+  @inbounds for j in axes(source, 2), i in axes(source, 1)
     value = source[i, j]
     iszero(value) && continue
     MPZ.mul!(scratch, coefficient, value)
@@ -442,27 +441,28 @@ a second copy of the accumulator: going down in `s` leaves every source coeffici
 ``t^{s-\\text{power}\\cdot k}`` untouched until it has been used.
 """
 function hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int)
-  n == 0 && return [dense_monomial(0, 0, BigInt(1), 0)]
   accumulator = [zero_coefficients(BigInt, 2s + 1) for s in 0:n]
   accumulator[1][1, 1] = BigInt(1)
+  scratch = BigInt()
   for k in 1:n, p in 0:2, q in 0:2
     hodge_number = hodge_numbers[p + 1, q + 1]
     iszero(hodge_number) && continue
     epsilon = iseven(p + q) ? -1 : 1
-    exponent = epsilon * hodge_number
-    maximum_power = fld(n, k)
+    highest = fld(n, k)
     factor = [
-      falling_binomial(exponent, power) * BigInt(epsilon)^power for
-      power in 0:maximum_power
+      falling_binomial(epsilon * hodge_number, power) * epsilon^power for
+      power in 0:highest
     ]
-    for s in n:-1:0, power in 1:min(maximum_power, fld(s, k))
-      coefficient = factor[power + 1]
-      iszero(coefficient) && continue
-      source = accumulator[s - power * k + 1]
-      destination = accumulator[s + 1]
-      shift_a, shift_b = power * (p + k - 1), power * (q + k - 1)
-      width = size(source, 1)
-      accumulate_scaled!(destination, source, coefficient, shift_a, shift_b, width)
+    for s in n:-1:0, power in 1:min(highest, fld(s, k))
+      iszero(factor[power + 1]) && continue
+      accumulate_scaled!(
+        accumulator[s + 1],
+        accumulator[s - power * k + 1],
+        factor[power + 1],
+        power * (p + k - 1),
+        power * (q + k - 1),
+        scratch,
+      )
     end
   end
   return accumulator
