@@ -289,6 +289,21 @@ const R, x, y = hodge_ring()
     @test projective_bundle(Pn(1), 2) == hypersurface(2, 2)
     @test projective_bundle(K3(), 1) == K3()
     @test mirror(mirror(hypersurface(5, 3))) == hypersurface(5, 3)
+    # the Galkin--Shinder--Voisin flip, in both directions
+    @test all(
+      standard_flip(
+        hilbtwo(hypersurface(3, n)),
+        fano_variety_lines_cubic(n) * Pn(2),
+        fano_variety_lines_cubic(n) * Pn(1),
+      ) == hypersurface(3, n) * Pn(n) for n in 2:7
+    )
+    @test all(
+      standard_flip(
+        hypersurface(3, n) * Pn(n),
+        fano_variety_lines_cubic(n) * Pn(1),
+        fano_variety_lines_cubic(n) * Pn(2),
+      ) == hilbtwo(hypersurface(3, n)) for n in 2:7
+    )
   end
 
   @testset "bielliptic surfaces" begin

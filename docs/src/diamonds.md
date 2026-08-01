@@ -55,6 +55,7 @@ is_serre_symmetric
 ```@docs
 blowup
 projective_bundle
+standard_flip
 mirror
 ```
 

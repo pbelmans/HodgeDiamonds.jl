@@ -923,6 +923,44 @@ projective_bundle(X::HodgeDiamond, rank::Integer) =
   sum((X(i) for i in 0:(rank - 1)); init=zero(HodgeDiamond))
 
 """
+    standard_flip(X, centre, other_centre; codimension = ..., other_codimension = ...)
+
+Hodge diamond of the target of a standard flip out of `X` with the given centre, where
+`other_centre` is the centre of the inverse flip.
+
+In a standard flip the centres are projective bundles ``\\mathbb{P}(E^+)`` and
+``\\mathbb{P}(E^-)`` over a common smooth base, and blowing up either centre gives the same
+variety. Eliminating that common blowup with [`blowup`](@ref) determines the Hodge diamond
+of the target. As for [`blowup`](@ref) no consistency checks are performed, and the
+codimensions can be given explicitly if a centre is not the Hodge diamond of an honest
+variety.
+
+# Examples
+
+The Galkin--Shinder--Voisin flip relates the Hilbert square of a cubic hypersurface to a
+projective bundle over the cubic, with the two centres projective bundles over the Fano
+variety of lines, see the introduction of [2602.07366]:
+
+  - [2602.07366] Shah, Flips for spaces of quadrics on del Pezzo varieties
+
+```jldoctest
+julia> X = hypersurface(3, 4); F = fano_variety_lines_cubic(4);
+
+julia> standard_flip(hilbtwo(X), F * Pn(2), F * Pn(1)) == X * Pn(4)
+true
+```
+"""
+standard_flip(
+  X::HodgeDiamond,
+  centre::HodgeDiamond,
+  other_centre::HodgeDiamond;
+  codimension::Integer=dimension(X) - dimension(centre),
+  other_codimension::Integer=dimension(X) - dimension(other_centre),
+) =
+  blowup(X, centre; codimension) -
+  blowup(zero(HodgeDiamond), other_centre; codimension=other_codimension)
+
+"""
     mirror(X)
 
 The mirror Hodge diamond.
