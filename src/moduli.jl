@@ -926,8 +926,8 @@ end
 
 # ── moduli of Higgs bundles on curves ────────────────────────────────────────────
 #
-# Hausel--Rodriguez-Villegas conjecture the mixed Hodge polynomial of the moduli space of
-# Higgs bundles; Mozgovoy restates it in the Grothendieck ring, which is the shape we can
+# Hausel conjectures the mixed Hodge polynomial of the moduli space of Higgs bundles;
+# Mozgovoy restates it in the Grothendieck ring, which is the shape we can
 # compute in. Write ``c=g-1``, let ``Z_X`` be the motivic zeta function of the curve, so
 # that ``Z_X(s)=\sum_j[\mathrm{Sym}^jX]s^j``, and for a partition ``\lambda`` of ``m`` let
 # ``a``, ``l``, ``h`` be the arm, leg and hook length of a box. Mozgovoy's Conjecture 2
@@ -1010,7 +1010,9 @@ function _higgs_adams(A::HiggsSeries, k::Int, N::Int, precision::Int)
 end
 
 "Product of two series in `T`, in the normalisation where `A[m]` stands for ``t^{-K_m}A[m]``."
-function _higgs_convolve(A::Vector{HiggsSeries}, B::Vector{HiggsSeries}, K, N, precision)
+function _higgs_convolve(
+  A::Vector{HiggsSeries}, B::Vector{HiggsSeries}, K, N::Int, precision::Int
+)
   product = [_higgs_zero(N, precision) for _ in eachindex(A)]
   for m in eachindex(A), i in 1:(m - 1)
     _higgs_add_shifted!(
@@ -1036,8 +1038,9 @@ function _higgs_partition(g::Int, partition, cache, N::Int, precision::Int)
     end
     term = _higgs_multiply(term, zeta, N, precision)
   end
-  shifted = _higgs_zero(N, precision)
-  return _higgs_add_shifted!(shifted, term, (g - 1) * (m^2 - m - 2 * legs))
+  return _higgs_add_shifted!(
+    _higgs_zero(N, precision), term, (g - 1) * (m^2 - m - 2 * legs)
+  )
 end
 
 """
@@ -1047,18 +1050,21 @@ Conjectural Hodge diamond of the moduli space of semistable Higgs bundles of the
 and degree on a curve of the given genus, where rank and degree are coprime and the genus
 is at least 1.
 
-This is Conjecture 5.6 of [math/0406380], in the motivic form of Conjecture 2 of
-[1104.5698], which is what is implemented. It is a *conjecture*: the answer is proven only
-in rank 2 by Hitchin's computation, in rank 3 by Gothen's, and in rank 4 for small genus.
-You have been warned.
+This is Conjecture 5.6 of [MR2166085], in the motivic form of Conjecture 2 of [MR2975380],
+which is what is implemented. Its specialisation to the Poincaré polynomial is a theorem in
+every rank, by Schiffmann and by Mellit, but the motivic refinement computed here is still a
+*conjecture*, verified in rank 2 by Hitchin's computation, in rank 3 by Gothen's, and in
+rank 4 for small genus. You have been warned.
 
-  - [math/0406380] Hausel--Rodriguez-Villegas, Mixed Hodge polynomials of character
-    varieties
-  - [1104.5698] Mozgovoy, Solutions of the motivic ADHM recursion formula
+  - [MR2166085] Hausel, Mirror symmetry and Langlands duality in the non-abelian Hodge
+    theory of a curve. Geometric methods in algebra and number theory, 193--217, Progr.
+    Math., 235, Birkhäuser, 2005.
+  - [MR2975380] Mozgovoy, Solutions of the motivic ADHM recursion formula. Int. Math. Res.
+    Not. IMRN 2012, no. 18, 4218--4244.
 
 The moduli space is smooth of dimension ``2n^2(g-1)+2``, but it is not projective, so what
 a Hodge diamond can mean for it needs saying. Its cohomology is nevertheless pure, by
-Theorem 2.1 of [math/0406380]: ``H^k`` carries a pure Hodge structure of weight ``k``, so
+Theorem 2.1 of [MR2166085]: ``H^k`` carries a pure Hodge structure of weight ``k``, so
 Hodge numbers ``\\mathrm{h}^{p,q}`` with ``p+q=k`` make sense as for a projective variety.
 What is returned are the Hodge numbers of cohomology *with compact support*, which is what
 the class in the Grothendieck ring computes, so that the entry in position ``(p,q)`` is
@@ -1073,9 +1079,11 @@ power of the Lefschetz class before measuring. Use ``2n^2(g-1)+2`` for ``d``, or
 off the top corner, which is ``\\mathrm{h}_{\\mathrm{c}}^{d,d}=1``.
 
 The answer does not depend on the degree, only on its being coprime to the rank.
-Hausel--Rodriguez-Villegas state their conjecture for the moduli space attached to
-``\\mathrm{PGL}_n``, which differs from this one by the factor `jacobian(genus)(genus)` of
-the cotangent bundle to the Jacobian.
+Hausel states the conjecture for the moduli space attached to ``\\mathrm{PGL}_n``, whose
+formula differs from this one by the factor `jacobian(genus)(genus)` of the cotangent
+bundle to the Jacobian. That is a relation between the two formulas, not a decomposition of
+the variety: the ``\\mathrm{GL}_n`` moduli space is a quotient by the ``n``-torsion of the
+Jacobian, not a product.
 
 # Examples
 
@@ -1169,7 +1177,7 @@ function moduli_higgs_bundles(rank::Integer, degree::Integer, genus::Integer)
   all(iszero, H[precision + 1]) ||
     error("the conjectural polynomial reaches beyond degree $(2 * half)")
 
-  value = sum(H[1:precision])           # H_n(1)
+  value = sum(H)                        # H_n(1)
   all(iszero, @view value[N + 1, :]) && all(iszero, @view value[:, N + 1]) ||
     error("the conjectural polynomial reaches beyond bidegree ($half, $half)")
 
