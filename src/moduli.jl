@@ -1327,7 +1327,10 @@ function moduli_higgs_bundles(rank::Integer, degree::Integer, genus::Integer)
     error("the conjectural polynomial reaches beyond bidegree ($half, $half)")
 
   return HodgeDiamond(
-    _to_integral_polynomial(lefschetz_shift(value, half, 2 * half))
+    _to_integral_polynomial(lefschetz_shift(value, half, 2 * half));
+    notation=Expr(:call, :Higgs, Symbol("C", _subscript(g)), n, d),
+    description="moduli space of semistable Higgs bundles of rank $n and degree $d on a \
+                 curve of genus $g",
   )
 end
 
@@ -1691,6 +1694,8 @@ function quiver_moduli(Q, d; mu=nothing)
   return HodgeDiamond(
     diagonal_polynomial(_integral(coeff(poincare, i)) for i in 0:degree(poincare));
     from_variety=_is_acyclic(adjacency),
+    description="moduli space of semistable representations of dimension vector \
+                 $(Tuple(target))",
   )
 end
 
