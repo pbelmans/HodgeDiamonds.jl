@@ -134,6 +134,76 @@ const R, x, y = hodge_ring()
     @test plain(named(Pn(1))) == "      1\n  0       0\n      1"
   end
 
+  @testset "names" begin
+    # the notation composes, the description does not
+    @test notation(K3()) === :K3
+    @test description(K3()) == "K3 surface"
+    @test notation(K3() * Pn(2)) == :(K3 * ℙ²)
+    @test description(K3() * Pn(2)) === nothing
+    @test repr(K3() * Pn(2)) == "K3 × ℙ²"
+    @test repr(K3() + Pn(2)) == "K3 ⊔ ℙ²"
+    @test repr(K3()^2) == "K3^2"
+    @test repr(K3()(2)) == "K3 × 𝕃^2"
+    @test repr(2 * K3()) == "2K3"
+    # Base brackets the notation for us, and only where it is needed
+    @test repr((K3() + Pn(2)) * curve(3)) == "(K3 ⊔ ℙ²) × C₃"
+    @test repr(K3() * Pn(2) + curve(3)) == "K3 × ℙ² ⊔ C₃"
+    @test repr(K3() * Pn(2) * curve(3)) == "K3 × ℙ² × C₃"
+
+    # a difference has no notation, and neither has an unnamed diamond
+    @test notation(K3() - Pn(2)) === nothing
+    @test notation(surface(1, 2, 4)) === nothing
+    @test notation(HodgeDiamond([1 0; 0 1])) === nothing
+
+    # names are dropped once they would mention too many pieces
+    @test notation(prod(fill(K3(), HD.NAME_ATOMS))) !== nothing
+    @test notation(prod(fill(K3(), HD.NAME_ATOMS + 1))) === nothing
+    @test notation(sum(point()(i) for i in 0:10)) === nothing
+
+    # `named` sets and strips, and never affects the diamond itself
+    X = named(hilbn(K3(), 3); notation=:Y, description="a sixfold")
+    @test repr(X) == "a sixfold"
+    @test repr(X * Pn(1)) == "Y × ℙ¹"
+    @test X == hilbn(K3(), 3) && hash(X) == hash(hilbn(K3(), 3))
+    @test notation(named(X)) === nothing && description(named(X)) === nothing
+    @test polynomial(X) == polynomial(hilbn(K3(), 3))
+
+    # the notation of the constructions, including the composed ones
+    @test repr(hilbn(K3(), 3)) == "K3^[3]"
+    @test repr(K3n(3)) == "K3^[3]"
+    @test repr(nestedhilbn(K3(), 3)) == "K3^[2, 3]"
+    @test repr(hilbn(curve(3), 2)) == "Sym²(C₃)"
+    @test repr(grassmannian(2, 5)) == "Gr(2, 5)"
+    @test repr(generalised_grassmannian("E6", 1)) == "E6 / P₁"
+    @test repr(orthogonal_grassmannian(2, 8)) == "OGr(2, 8)"
+    @test repr(lagrangian_grassmannian(3)) == "LGr(3, 6)"
+    @test repr(hypersurface(5, 3)) == "X₅ ⊂ ℙ⁴"
+    @test repr(complete_intersection([2, 2], 3)) == "X(2, 2) ⊂ ℙ⁵"
+    @test repr(weighted_hypersurface(6, [1, 1, 1, 1, 3])) == "X₆ ⊂ ℙ(1, 1, 1, 1, 3)"
+    @test repr(Pn(10)) == "ℙ¹⁰"
+    @test repr(ogrady6()) == "O'Grady's six-dimensional example"
+    @test notation(ogrady6()) === :OG₆
+    @test repr(generalised_kummer(3)) == "Kum₃"
+    @test repr(gushel_mukai(4)) == "Gushel-Mukai fourfold"
+    # the ramification data belongs to the notation of a Brauer--Severi scheme
+    @test repr(notation(brauer_severi(1, 2, fill((1, 1), 3)))) ==
+      ":(BS₂(C₁, (1, 1), (1, 1), (1, 1)))"
+
+    # every notation has to be printable, which means valid identifiers throughout
+    for X in (
+      point(), lefschetz(), Pn(3), curve(2), symn(3, 2), abelian(2), jacobian(3),
+      kummer_resolution(2), K3(), enriques(), inoue(), hopf(), hilbn(K3(), 2),
+      hilbtwo(Pn(2)), hilbthree(K3()), generalised_kummer(3), ogrady6(), ogrady10(),
+      grassmannian(2, 5), orthogonal_grassmannian(2, 8), symplectic_grassmannian(2, 6),
+      lagrangian_grassmannian(2), odd_symplectic_grassmannian(2, 5),
+      moduli_vector_bundles(3, 1, 4), seshadris_desingularisation(3),
+      quot_scheme_curve(3, 2, 2), fano_variety_lines_cubic(4), Mzeronbar(5),
+      fano_threefold(1, 17), gushel_mukai(4), brauer_severi(1, 2, [(1, 1)]),
+    )
+      @test !occursin("var\"", repr(X * Pn(1)))
+    end
+  end
+
   @testset "Hochschild homology" begin
     h = hh(K3())
     @test h == HochschildHomology([1, 0, 22, 0, 1])
