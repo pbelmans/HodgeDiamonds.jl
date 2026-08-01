@@ -417,6 +417,7 @@ end
 
 """
     hilbn_series(hodge_numbers, n)
+    hilbn_series(hodge_numbers_at, n)
 
 Coefficients of ``t^0`` up to ``t^n`` in Göttsche's product
 
@@ -430,6 +431,11 @@ each as a dense matrix of coefficients of ``a^pb^q``, where
 result is the coefficient of ``t^s``; [`hilbn`](@ref) needs only the last, but
 [`nestedhilbn`](@ref) needs them all.
 
+The factors indexed by `k` may use different Hodge numbers, by passing a callable
+`hodge_numbers_at` which returns the matrix to be used for a given `k`. This is what
+[`enriques_hilbn_cover`](@ref) needs, where the factors of odd `k` are twisted by a local
+system.
+
 The accumulator is ragged: the coefficient of ``t^s`` has bidegree at most `(2s, 2s)`, so
 storing it as `(2s+1)²` rather than `(2n+1)²` cuts the work by an order of magnitude.
 Each factor is expanded by the binomial series (valid for negative exponents too), whose
@@ -440,29 +446,35 @@ A factor contributes the identity in its ``t^0`` term, so it can be multiplied i
 a second copy of the accumulator: going down in `s` leaves every source coefficient
 ``t^{s-\\text{power}\\cdot k}`` untouched until it has been used.
 """
-function hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int)
+hilbn_series(hodge_numbers::Matrix{BigInt}, n::Int) =
+  hilbn_series(Returns(hodge_numbers), n)
+
+function hilbn_series(hodge_numbers_at, n::Int)
   accumulator = [zero_coefficients(BigInt, 2s + 1) for s in 0:n]
   accumulator[1][1, 1] = BigInt(1)
   scratch = BigInt()
-  for k in 1:n, p in 0:2, q in 0:2
-    hodge_number = hodge_numbers[p + 1, q + 1]
-    iszero(hodge_number) && continue
-    epsilon = iseven(p + q) ? -1 : 1
-    highest = fld(n, k)
-    factor = [
-      falling_binomial(epsilon * hodge_number, power) * epsilon^power for
-      power in 0:highest
-    ]
-    for s in n:-1:0, power in 1:min(highest, fld(s, k))
-      iszero(factor[power + 1]) && continue
-      accumulate_scaled!(
-        accumulator[s + 1],
-        accumulator[s - power * k + 1],
-        factor[power + 1],
-        power * (p + k - 1),
-        power * (q + k - 1),
-        scratch,
-      )
+  for k in 1:n
+    hodge_numbers = hodge_numbers_at(k)
+    for p in 0:2, q in 0:2
+      hodge_number = hodge_numbers[p + 1, q + 1]
+      iszero(hodge_number) && continue
+      epsilon = iseven(p + q) ? -1 : 1
+      highest = fld(n, k)
+      factor = [
+        falling_binomial(epsilon * hodge_number, power) * epsilon^power for
+        power in 0:highest
+      ]
+      for s in n:-1:0, power in 1:min(highest, fld(s, k))
+        iszero(factor[power + 1]) && continue
+        accumulate_scaled!(
+          accumulator[s + 1],
+          accumulator[s - power * k + 1],
+          factor[power + 1],
+          power * (p + k - 1),
+          power * (q + k - 1),
+          scratch,
+        )
+      end
     end
   end
   return accumulator
