@@ -51,9 +51,13 @@ true
 """
 struct HodgeDiamond
   f::HPoly
+  notation::Union{Nothing,Symbol,Expr,Int}
+  description::Union{Nothing,String}
 
-  function HodgeDiamond(f::HPoly; from_variety::Bool=false)
-    diamond = new(f)
+  function HodgeDiamond(
+    f::HPoly; from_variety::Bool=false, notation=nothing, description=nothing
+  )
+    diamond = new(f, notation, description)
     from_variety &&
       !arises_from_variety(diamond) &&
       throw(
@@ -63,16 +67,102 @@ struct HodgeDiamond
   end
 end
 
-HodgeDiamond(n::Integer) = HodgeDiamond(R(n))
+# the integer is its own notation, so that `2 * K3()` is named `2 × K3`
+HodgeDiamond(n::Integer) = HodgeDiamond(R(n); notation=Int(n))
 
-function HodgeDiamond(m::AbstractMatrix{<:Integer}; from_variety::Bool=false)
+function HodgeDiamond(m::AbstractMatrix{<:Integer}; kwargs...)
   size(m, 1) == size(m, 2) || throw(ArgumentError("matrix needs to be square"))
-  return HodgeDiamond(build_polynomial(dense_terms(m)); from_variety=from_variety)
+  return HodgeDiamond(build_polynomial(dense_terms(m)); kwargs...)
 end
 
 function HodgeDiamond(rows::AbstractVector{<:AbstractVector{<:Integer}}; kwargs...)
   return HodgeDiamond(permutedims(reduce(hcat, rows)); kwargs...)
 end
+
+# ── names ───────────────────────────────────────────────────────────────────────
+#
+# A diamond can carry two names: the notation, terse mathematical shorthand which the
+# operations below propagate, and the description, a phrase for the reader. The notation is
+# stored as a Julia expression, so that printing it delegates precedence and bracketing to
+# Base rather than to a precedence table of our own.
+
+"""
+    notation(X)
+
+The mathematical shorthand for the Hodge diamond, or `nothing` if it has none. Products,
+disjoint unions, powers and twists compose the notation of their arguments, as far as
+[`named`](@ref) describes.
+
+A composed notation is a Julia expression built with `*` and `+`, the operators Base prints
+flat and brackets correctly. Printing substitutes the mathematical glyphs for them, so the
+expression `:(K3 * K3)` is displayed as `K3 × K3`.
+
+# Examples
+
+```jldoctest
+julia> S = named(K3(); notation = :K3);
+
+julia> notation(S * S)
+:(K3 * K3)
+
+julia> println(S * S)
+K3 × K3
+```
+"""
+notation(X::HodgeDiamond) = X.notation
+
+"""
+    description(X)
+
+The phrase describing the Hodge diamond, or `nothing` if it has none. Unlike the
+[`notation`](@ref), a description is not propagated by the operations: there is no good
+phrase for a product.
+
+# Examples
+
+```jldoctest
+julia> S = named(K3(); notation = :K3, description = "K3 surface");
+
+julia> description(S)
+"K3 surface"
+
+julia> description(S * S) === nothing
+true
+```
+"""
+description(X::HodgeDiamond) = X.description
+
+"""
+    named(X; notation = nothing, description = nothing)
+
+The same Hodge diamond carrying the given names, replacing whatever it had. Both are
+optional, so `named(X)` strips the names again.
+
+The notation is propagated by the operations, up to a point: a product, disjoint union,
+power or twist of named diamonds is named, and once the notation would mention more than
+`HodgeDiamonds.NAME_ATOMS` pieces it is dropped rather than becoming unreadable.
+Names never affect equality, so a renamed diamond stays equal to the original.
+
+# Examples
+
+```jldoctest
+julia> X = named(hilbn(K3(), 3); notation = :Y, description = "my favourite sixfold");
+
+julia> println(X)
+my favourite sixfold
+
+julia> println(X * X)
+Y × Y
+
+julia> X == hilbn(K3(), 3)
+true
+
+julia> notation(named(X)) === nothing
+true
+```
+"""
+named(X::HodgeDiamond; notation=nothing, description=nothing) =
+  HodgeDiamond(X.f; notation=notation, description=description)
 
 """
     polynomial(X::HodgeDiamond)
@@ -145,6 +235,37 @@ function Base.getindex(X::HodgeDiamond, p::Integer, q::Integer)
 end
 
 # ── arithmetic ──────────────────────────────────────────────────────────────────
+#
+# Each operation composes the notations of its arguments, and drops the descriptions: a
+# product of two varieties has no phrase describing it. Only `-` drops the notation too,
+# there being no accepted notation for a difference of varieties.
+
+#: how many pieces a composed notation may mention before it is dropped as unreadable
+const NAME_ATOMS = 6
+
+#: notation for the Lefschetz class, which the twist composes with
+const LEFSCHETZ = Symbol("𝕃")
+
+# The operator of a call is not one of the pieces, hence dropping the first argument.
+_atoms(name) = name isa Expr ? sum(_atoms, @view(name.args[2:end]); init=0) : 1
+
+# `Expr(:call, :×, …)` rather than a string, so that Base supplies the brackets: the notation
+# of `(K3 ⊔ ℙ²) × C₃` comes out right without us knowing anything about precedence.
+function _compose(operator::Symbol, left, right)
+  (left === nothing || right === nothing) && return nothing
+  # products and unions are associative, so a nested call to the same operator is spliced into
+  # one n-ary call: Base prints that flat, as `K3 × ℙ² × C₃` rather than `(K3 × ℙ²) × C₃`
+  pieces = Any[]
+  for part in (left, right)
+    if operator !== :^ && Meta.isexpr(part, :call) && part.args[1] === operator
+      append!(pieces, @view(part.args[2:end]))
+    else
+      push!(pieces, part)
+    end
+  end
+  composed = Expr(:call, operator, pieces...)
+  return _atoms(composed) <= NAME_ATOMS ? composed : nothing
+end
 
 """
     X + Y
@@ -163,7 +284,8 @@ julia> K3() + zero(HodgeDiamond) == K3()
 true
 ```
 """
-Base.:+(X::HodgeDiamond, Y::HodgeDiamond) = HodgeDiamond(X.f + Y.f)
+Base.:+(X::HodgeDiamond, Y::HodgeDiamond) =
+  HodgeDiamond(X.f + Y.f; notation=_compose(:+, X.notation, Y.notation))
 
 """
     X - Y
@@ -205,7 +327,8 @@ julia> 2 * K3() == K3() + K3()
 true
 ```
 """
-Base.:*(X::HodgeDiamond, Y::HodgeDiamond) = HodgeDiamond(X.f * Y.f)
+Base.:*(X::HodgeDiamond, Y::HodgeDiamond) =
+  HodgeDiamond(X.f * Y.f; notation=_compose(:*, X.notation, Y.notation))
 
 """
     X^k
@@ -219,7 +342,8 @@ julia> K3()^2 == K3() * K3()
 true
 ```
 """
-Base.:^(X::HodgeDiamond, k::Integer) = HodgeDiamond(X.f^k)
+Base.:^(X::HodgeDiamond, k::Integer) =
+  HodgeDiamond(X.f^k; notation=_compose(:^, X.notation, Int(k)))
 
 for operator in (:+, :-, :*)
   @eval Base.$operator(X::HodgeDiamond, n::Integer) = $operator(X, HodgeDiamond(n))
@@ -262,7 +386,14 @@ function (X::HodgeDiamond)(i::Integer)
   i >= -lefschetz_power(X) ||
     throw(ArgumentError("cannot untwist by more than the Lefschetz power"))
   twist = (x * y)^abs(i)
-  return HodgeDiamond(i >= 0 ? X.f * twist : divexact(X.f, twist))
+  return HodgeDiamond(
+    i >= 0 ? X.f * twist : divexact(X.f, twist);
+    notation=if iszero(i)
+      X.notation
+    else
+      _compose(:*, X.notation, Expr(:call, :^, LEFSCHETZ, Int(i)))
+    end,
+  )
 end
 
 """
@@ -930,9 +1061,24 @@ pprint(io::IO, X::HodgeDiamond; kwargs...) = print(io, _render(_grid(X; kwargs..
 
 pprint(X::HodgeDiamond; kwargs...) = pprint(stdout, X; kwargs...)
 
-Base.show(io::IO, ::MIME"text/plain", X::HodgeDiamond) = pprint(io, X)
+# The caption a named diamond is displayed under: the description if it has one, and the
+# notation otherwise. Notations are built with `*` and `+`, the operators Base prints flat and
+# brackets correctly, and the mathematical glyphs are substituted here.
+function _caption(X::HodgeDiamond)
+  X.description === nothing || return X.description
+  X.notation === nothing && return nothing
+  return replace(string(X.notation), " * " => " × ", " + " => " ⊔ ", " ^ " => "^")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", X::HodgeDiamond)
+  caption = _caption(X)
+  caption === nothing || println(io, caption)
+  return pprint(io, X)
+end
 
 function Base.show(io::IO, X::HodgeDiamond)
+  caption = _caption(X)
+  caption === nothing || return print(io, caption)
   return print(
     io, "Hodge diamond of size $(_top_degree(X) + 1) and dimension $(dimension(X))"
   )

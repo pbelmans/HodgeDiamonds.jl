@@ -53,6 +53,7 @@ include("moduli.jl")
 export HodgeDiamond, HochschildHomology
 export from_positive
 export hodge_ring, polynomial, pprint
+export description, named, notation
 export arises_from_variety,
   betti,
   dimension,
