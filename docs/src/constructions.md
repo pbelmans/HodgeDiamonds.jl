@@ -78,6 +78,14 @@ fano_variety_intersection_quadrics_odd
 fano_variety_lines_cubic
 ```
 
+## Hilbert schemes of subvarieties of low degree
+
+Parametrising quadrics and cubics rather than linear subspaces.
+
+```@docs
+hilbert_scheme_quadrics_quadric
+```
+
 ## Homogeneous varieties and closely related constructions
 
 These are also all Fano varieties, but they are grouped together because of their similar

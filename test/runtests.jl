@@ -313,6 +313,21 @@ const R, x, y = hodge_ring()
     @test description(bielliptic()) == "bielliptic surface"
   end
 
+  @testset "Hilbert schemes of quadrics on a quadric" begin
+    # for k = 0 the quadrics are pairs of points, so this is the Hilbert square
+    @test all(
+      hilbert_scheme_quadrics_quadric(0, n) == hilbtwo(hypersurface(2, n)) for n in 2:8
+    )
+    # hyperplane sections never degenerate into a linear space
+    @test all(hilbert_scheme_quadrics_quadric(n - 1, n) == Pn(n + 1) for n in 2:8)
+    @test all(
+      dimension(hilbert_scheme_quadrics_quadric(k, n)) == (k + 2) * (n - k) for n in 2:8 for
+      k in 0:n
+    )
+    @test_throws ArgumentError hilbert_scheme_quadrics_quadric(-1, 4)
+    @test_throws ArgumentError hilbert_scheme_quadrics_quadric(5, 4)
+  end
+
   @testset "Hilbert schemes" begin
     @test hilbn(K3(), 0) == point()
     @test hilbn(K3(), 1) == K3() == K3n(1)

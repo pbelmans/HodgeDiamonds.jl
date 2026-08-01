@@ -110,6 +110,7 @@ export K3n,
   ogrady6,
   ogrady10
 export brauer_severi,
+  hilbert_scheme_quadrics_quadric,
   kirwans_desingularisation,
   moduli_higgs_bundles,
   moduli_parabolic_vector_bundles_rank_two,

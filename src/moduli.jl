@@ -1524,6 +1524,61 @@ function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
   )
 end
 
+# ── Hilbert schemes of subvarieties of low degree ────────────────────────────────
+#
+# The quadrics of dimension k on X ⊂ ℙ(V) span a (k+2)-dimensional subspace of V, which is
+# what makes Gr(k+2, V) the ambient space throughout.
+
+"""
+    hilbert_scheme_quadrics_quadric(k, n)
+
+Hodge diamond of the Hilbert scheme of `k`-dimensional quadrics on a smooth quadric of
+dimension `n`.
+
+By the remark following Theorem 2 of [2602.07366] this is the blowup of
+``\\operatorname{Gr}(k+2,n+2)`` along the orthogonal Grassmannian of isotropic subspaces,
+the locus where the quadric section degenerates into a linear space.
+
+  - [2602.07366] Shah, Flips for spaces of quadrics on del Pezzo varieties
+
+# Examples
+
+The `k = 0` case parametrises pairs of points, so it is the Hilbert square:
+
+```jldoctest
+julia> all(hilbert_scheme_quadrics_quadric(0, n) == hilbtwo(hypersurface(2, n)) for n in 2:6)
+true
+```
+
+Hyperplane sections never degenerate, so they are parametrised by the dual projective
+space:
+
+```jldoctest
+julia> all(hilbert_scheme_quadrics_quadric(n - 1, n) == Pn(n + 1) for n in 2:6)
+true
+```
+"""
+function hilbert_scheme_quadrics_quadric(k::Integer, n::Integer)
+  0 <= k <= n || throw(ArgumentError("need 0 ≤ k ≤ n"))
+  N, span = n + 2, k + 2          # the ambient vector space, and what such a quadric spans
+  ambient = grassmannian(span, N)
+  centre = if 2span > N
+    # no isotropic subspace is that big, so nothing degenerates and nothing is blown up
+    zero(HodgeDiamond)
+  elseif 2span == N
+    # in even dimension the maximal isotropic subspaces come in two families, which
+    # `orthogonal_grassmannian` leaves out because it returns a single one
+    2 * partial_flag_variety("D$span", 1:(span - 1))
+  else
+    orthogonal_grassmannian(span, N)
+  end
+  return named(
+    iszero(centre) ? ambient : blowup(ambient, centre);
+    notation=Expr(:call, Symbol("G", _subscript(k)), Symbol("Q", _superscript(n))),
+    description="Hilbert scheme of $k-dimensional quadrics on a quadric of dimension $n",
+  )
+end
+
 # ── quiver moduli ────────────────────────────────────────────────────────────────
 
 const Rv, _v_generator = polynomial_ring(QQ, :v)
