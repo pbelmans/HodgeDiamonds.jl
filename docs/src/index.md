@@ -123,6 +123,49 @@ julia> HodgeDiamond([1 0 1; 0 20 0; 1 0 1]) == K3()
 true
 ```
 
+## Names
+
+Every construction knows what it is, so a diamond prints under its own name, and products,
+disjoint unions, powers and twists keep track of it:
+
+```jldoctest
+julia> println(K3() * Pn(2))
+K3 × ℙ²
+
+julia> println(hilbn(K3(), 3))
+K3^[3]
+
+julia> println(brauer_severi(1, 2, [(1, 1), (1, 1)]))
+Brauer-Severi scheme of a hereditary order of degree 2 on a curve of genus 1, ramified in 2 points
+```
+
+The name is a caption above the diamond, and [`named`](@ref) sets your own or strips it:
+
+```jldoctest
+K3()
+
+# output
+
+K3 surface
+          1
+      0        0
+  1       20       1
+      0        0
+          1
+```
+
+```jldoctest
+named(K3())
+
+# output
+
+          1
+      0        0
+  1       20       1
+      0        0
+          1
+```
+
 ## Mathematical notation
 
 A few Unicode aliases are exported for the notation one would write on a blackboard.
@@ -169,6 +212,9 @@ differs where Julia has a better way of saying something:
     with [`hodge_ring`](@ref).
   - Sage's `HodgeDiamondRing` and `HochschildHomologies` parent objects are gone; Julia
     needs no parents.
+  - Sage's `rename` and `reset_name`, which come from that parent machinery, are
+    [`named`](@ref). A name is a [`notation`](@ref) that composes and a
+    [`description`](@ref) that reads, rather than one string doing both.
   - The characteristic-2 Enriques surfaces are selected positionally,
     `enriques("classical")`, rather than through Sage's `two=` keyword.
   - [`blowup`](@ref) takes `codimension`, not Sage's `codim`.

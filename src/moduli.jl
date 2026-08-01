@@ -2,6 +2,13 @@ const RationalCoefficient = Rational{BigInt}
 
 # ── Hilbert schemes of points ────────────────────────────────────────────────────
 
+# `S^[n]` for a Hilbert scheme of points, and `S^[n-1, n]` for a nested one, or nothing when
+# the surface itself is unnamed. A bracketed exponent is not an identifier, so it has to be
+# built as an expression for Base to print it.
+_hilb_notation(S::HodgeDiamond, parts...) =
+  notation(S) === nothing ? nothing :
+  Expr(:call, :^, notation(S), Expr(:vect, parts...))
+
 """
     hilbn(X, n)
 
@@ -29,13 +36,6 @@ julia> hilbn(curve(3), 2) == symn(3, 2)
 true
 ```
 """
-# `S^[n]` for a Hilbert scheme of points, and `S^[n-1, n]` for a nested one, or nothing when
-# the surface itself is unnamed. A bracketed exponent is not an identifier, so it has to be
-# built as an expression for Base to print it.
-_hilb_notation(S::HodgeDiamond, parts...) =
-  notation(S) === nothing ? nothing :
-  Expr(:call, :^, notation(S), Expr(:vect, parts...))
-
 function hilbn(S::HodgeDiamond, n::Integer)
   if dimension(S) == 1
     # the Hilbert scheme of a smooth curve is its symmetric power

@@ -58,6 +58,14 @@ projective_bundle
 mirror
 ```
 
+## Names
+
+```@docs
+notation
+description
+named
+```
+
 ## Printing
 
 ```@docs
