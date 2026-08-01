@@ -15,8 +15,10 @@ const R, x, y = hodge_ring()
       :(using AbstractAlgebra, HodgeDiamonds);
       recursive=true,
     )
-    # the package root, so the manual pages in docs/src are covered too
-    doctest(pkgdir(HodgeDiamonds), [HodgeDiamonds])
+    # `docs/src` rather than the package root, so that the manual pages are covered but
+    # stray Markdown elsewhere under the root is not: git worktrees live in `.claude`, and
+    # doctesting a sibling branch's manual against this branch's code fails for no reason
+    doctest(joinpath(pkgdir(HodgeDiamonds), "docs", "src"), [HodgeDiamonds])
   end
 
   @testset "construction" begin
