@@ -212,6 +212,7 @@ enriques_hilbn_cover(2)
 
 # output
 
+universal cover of the Hilbert scheme of 2 points on an Enriques surface
                     1
                0         0
           0        12        0
@@ -252,7 +253,11 @@ function enriques_hilbn_cover(n::Integer)
   anti_invariant = BigInt[cover[p, q] - S[p, q] for p in 0:2, q in 0:2]
   untwisted = hilbn_series(invariant, n)[end]
   twisted = hilbn_series(k -> isodd(k) ? anti_invariant : invariant, n)[end]
-  return HodgeDiamond(dense_to_polynomial(untwisted + twisted); from_variety=true)
+  return named(
+    HodgeDiamond(dense_to_polynomial(untwisted + twisted); from_variety=true);
+    notation=Expr(:call, :Cov, Expr(:ref, :S, n)),
+    description="universal cover of the Hilbert scheme of $n points on an Enriques surface",
+  )
 end
 
 """
