@@ -221,6 +221,11 @@ differs where Julia has a better way of saying something:
   - [`pprint`](@ref) has no `format=`: it always prints a diamond, and
     [`polynomial`](@ref) gives the Hodge--Poincaré polynomial.
 
+A few constructions have no Sage counterpart to be named after: [`bielliptic`](@ref),
+[`standard_flip`](@ref), [`complete_intersection_grassmannian`](@ref),
+[`hilbert_scheme_quadrics_quadric`](@ref) and
+[`hilbert_scheme_twisted_cubics_cubic_fourfold`](@ref).
+
 ## Index
 
 ```@docs
