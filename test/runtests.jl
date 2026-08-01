@@ -328,6 +328,13 @@ const R, x, y = hodge_ring()
     @test_throws ArgumentError hilbert_scheme_quadrics_quadric(5, 4)
   end
 
+  @testset "twisted cubics on a cubic fourfold" begin
+    M = hilbert_scheme_twisted_cubics_cubic_fourfold()
+    @test dimension(M) == 10
+    @test euler(M) == 3 * (euler(K3n(4)) + 3 * euler(hypersurface(3, 4)))
+    @test arises_from_variety(M)
+  end
+
   @testset "Hilbert schemes" begin
     @test hilbn(K3(), 0) == point()
     @test hilbn(K3(), 1) == K3() == K3n(1)

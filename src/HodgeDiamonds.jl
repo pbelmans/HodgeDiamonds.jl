@@ -111,6 +111,7 @@ export K3n,
   ogrady10
 export brauer_severi,
   hilbert_scheme_quadrics_quadric,
+  hilbert_scheme_twisted_cubics_cubic_fourfold,
   kirwans_desingularisation,
   moduli_higgs_bundles,
   moduli_parabolic_vector_bundles_rank_two,

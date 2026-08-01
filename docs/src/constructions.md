@@ -84,6 +84,7 @@ Parametrising quadrics and cubics rather than linear subspaces.
 
 ```@docs
 hilbert_scheme_quadrics_quadric
+hilbert_scheme_twisted_cubics_cubic_fourfold
 ```
 
 ## Homogeneous varieties and closely related constructions

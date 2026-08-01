@@ -1579,6 +1579,45 @@ function hilbert_scheme_quadrics_quadric(k::Integer, n::Integer)
   )
 end
 
+"""
+    hilbert_scheme_twisted_cubics_cubic_fourfold()
+
+Hodge diamond of the moduli space ``M_3(Y)`` of generalised twisted cubic curves on a
+smooth cubic fourfold ``Y\\subset\\mathbb{P}^5`` not containing a plane, a smooth
+projective variety of dimension 10.
+
+By Theorem B of [MR3709061] the contraction ``M_3(Y)\\to Z(Y)`` onto the hyperkähler
+eightfold factors as a ``\\mathbb{P}^2``-fibration ``M_3(Y)\\to Z'(Y)`` followed by the
+blowup ``Z'(Y)\\to Z(Y)`` along ``Y``, which sits inside ``Z(Y)`` as a Lagrangian
+submanifold. That ``Z(Y)`` is of ``\\mathrm{K3}^{[4]}``-type is Theorem A of [MR3709062].
+
+  - [MR3709061] Lehn--Lehn--Sorger--van Straten, Twisted cubics on cubic fourfolds,
+    J. reine angew. Math. 731 (2017), 87--128.
+  - [MR3709062] Addington--Lehn, On the symplectic eightfold associated to a Pfaffian cubic
+    fourfold, J. reine angew. Math. 731 (2017), 129--137.
+
+# Examples
+
+The Euler number is three times that of the blowup, and the 25650 of the eightfold is how
+[MR3709061] first recognised it as being of ``\\mathrm{K3}^{[4]}``-type:
+
+```jldoctest
+julia> dimension(hilbert_scheme_twisted_cubics_cubic_fourfold())
+10
+
+julia> χ_top(K3n(4))
+25650
+
+julia> χ_top(hilbert_scheme_twisted_cubics_cubic_fourfold())
+77193
+```
+"""
+hilbert_scheme_twisted_cubics_cubic_fourfold() = named(
+  projective_bundle(blowup(K3n(4), hypersurface(3, 4)), 3);
+  notation=Expr(:call, Symbol("M", _subscript(3)), :Y),
+  description="moduli of generalised twisted cubics on a cubic fourfold",
+)
+
 # ── quiver moduli ────────────────────────────────────────────────────────────────
 
 const Rv, _v_generator = polynomial_ring(QQ, :v)
