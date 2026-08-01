@@ -47,6 +47,7 @@ hypersurface(5, 3)
 
 # output
 
+X₅ ⊂ ℙ⁴
                 1
            0         0
       0         1         0
@@ -89,6 +90,7 @@ hilbn(K3(), 2)
 
 # output
 
+K3^[2]
                     1
                0         0
           1        21        1

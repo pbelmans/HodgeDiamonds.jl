@@ -379,6 +379,20 @@ A composition is a choice of cut points in `1:(r - 1)`, so the powerset gives al
 compositions(r::Int) =
   iszero(r) ? [Int[]] : [diff([0; cuts; r]) for cuts in powerset(1:(r - 1))]
 
+# ── Unicode digits, for the notation of the constructions ───────────────────────
+#
+# A notation is stored as a Julia expression and printed by Base, so it must consist of valid
+# identifiers: `ℙ²` and `C₃` are identifiers, whereas `ℙ^2` and `O'G₆` are not.
+
+const SUPERSCRIPT = Dict(zip("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹"))
+const SUBSCRIPT = Dict(zip("-0123456789", "₋₀₁₂₃₄₅₆₇₈₉"))
+
+"The digits of `n` as Unicode superscripts, so that ``\\mathbb{P}^{10}`` can be `ℙ¹⁰`."
+_superscript(n::Integer) = map(digit -> SUPERSCRIPT[digit], string(n))
+
+"The digits of `n` as Unicode subscripts, so that ``C_3`` can be `C₃`."
+_subscript(n::Integer) = map(digit -> SUBSCRIPT[digit], string(n))
+
 "Multiplicities of the parts of a partition, as a `part => multiplicity` dictionary."
 multiplicities(partition) =
   Dict(part => count(==(part), partition) for part in unique(partition))

@@ -29,6 +29,13 @@ julia> hilbn(curve(3), 2) == symn(3, 2)
 true
 ```
 """
+# `S^[n]` for a Hilbert scheme of points, and `S^[n-1, n]` for a nested one, or nothing when
+# the surface itself is unnamed. A bracketed exponent is not an identifier, so it has to be
+# built as an expression for Base to print it.
+_hilb_notation(S::HodgeDiamond, parts...) =
+  notation(S) === nothing ? nothing :
+  Expr(:call, :^, notation(S), Expr(:vect, parts...))
+
 function hilbn(S::HodgeDiamond, n::Integer)
   if dimension(S) == 1
     # the Hilbert scheme of a smooth curve is its symmetric power
@@ -42,7 +49,11 @@ function hilbn(S::HodgeDiamond, n::Integer)
   n = Int(n)
   hodge_numbers = BigInt[S[p, q] for p in 0:2, q in 0:2]
   top = hilbn_series(hodge_numbers, n)[end]
-  return HodgeDiamond(dense_to_polynomial(top); from_variety=arises_from_variety(S))
+  return HodgeDiamond(
+    dense_to_polynomial(top);
+    from_variety=arises_from_variety(S),
+    notation=_hilb_notation(S, n),
+  )
 end
 
 """
@@ -78,7 +89,9 @@ function nestedhilbn(S::HodgeDiamond, n::Integer)
   for p in 0:(2n), q in 0:(2n)
     M[p + 1, q + 1] = top[min(p, 2n - q) + 1, min(q, 2n - p) + 1]
   end
-  return HodgeDiamond(M; from_variety=true)
+  return HodgeDiamond(
+    M; from_variety=true, notation=_hilb_notation(S, n - 1, n)
+  )
 end
 
 """
@@ -107,7 +120,11 @@ function hilbtwo(X::HodgeDiamond)
   f = polynomial(X)
   doubled = _substitute_powers(f, 2, -1)
   twisted = sum((polynomial(X(i)) for i in 1:(d - 1)); init=zero(R))
-  return HodgeDiamond(divexact(f^2 + doubled, R(2)) + twisted; from_variety=true)
+  return HodgeDiamond(
+    divexact(f^2 + doubled, R(2)) + twisted;
+    from_variety=true,
+    notation=_hilb_notation(X, 2),
+  )
 end
 
 """
@@ -138,7 +155,9 @@ function hilbthree(X::HodgeDiamond)
     2 * _substitute_powers(f, 3, 1) +
     6 * sum((polynomial(squared(i)) for i in 1:(d - 1)); init=zero(R)) +
     6 * sum((polynomial(X(i + j)) for i in 1:(d - 1) for j in i:(d - 1)); init=zero(R))
-  return HodgeDiamond(divexact(sixfold, R(6)); from_variety=true)
+  return HodgeDiamond(
+    divexact(sixfold, R(6)); from_variety=true, notation=_hilb_notation(X, 3)
+  )
 end
 
 # f(sign * x^power, sign * y^power), for a sign of plus or minus one
@@ -293,6 +312,7 @@ function generalised_kummer(n::Integer)
       ),
     );
     from_variety=true,
+    notation=Symbol("Kum", _subscript(n)),
   )
 end
 
@@ -379,6 +399,8 @@ ogrady6() = HodgeDiamond(
     1 0 1 0 1 0 1
   ];
   from_variety=true,
+  notation=Symbol("OG", _subscript(6)),
+  description="O'Grady's six-dimensional example",
 )
 
 """
@@ -412,6 +434,8 @@ ogrady10() = HodgeDiamond(
     1 0 1 0 1 0 1 0 1 0 1
   ];
   from_variety=true,
+  notation=Symbol("OG", _subscript(10)),
+  description="O'Grady's ten-dimensional example",
 )
 
 # ── moduli of vector bundles on curves ───────────────────────────────────────────
@@ -466,9 +490,20 @@ function moduli_vector_bundles(rank::Integer, degree::Integer, genus::Integer)
   r, d, g = Int(rank), Int(degree), Int(genus)
   r >= 2 || throw(ArgumentError("rank needs to be at least 2"))
   g >= 2 || throw(ArgumentError("genus needs to be at least 2"))
-  isone(gcd(r, d)) || return HodgeDiamond(_intersection_moduli_vector_bundles(r, d, g))
+  moduli = Expr(:call, :M, Symbol("C", _subscript(g)), r, d)
+  bundles = "rank $r bundles of degree $d with fixed determinant on a curve of genus $g"
+  isone(gcd(r, d)) || return HodgeDiamond(
+    _intersection_moduli_vector_bundles(r, d, g);
+    notation=Expr(:call, :IH, moduli),
+    description="intersection cohomology of the moduli space of $bundles",
+  )
   total = _del_bano(r, d, g)
-  return HodgeDiamond(dense_to_polynomial(total); from_variety=true)
+  return HodgeDiamond(
+    dense_to_polynomial(total);
+    from_variety=true,
+    notation=moduli,
+    description="moduli space of $bundles",
+  )
 end
 
 # `N` is the truncation bidegree, by default the dimension of the moduli space. Coprime
@@ -828,7 +863,9 @@ function seshadris_desingularisation(genus::Integer)
   )
 
   return HodgeDiamond(
-    _to_integral_polynomial(part_one - part_two + part_three + part_four + part_five)
+    _to_integral_polynomial(part_one - part_two + part_three + part_four + part_five);
+    notation=Expr(:call, :Sesh, Symbol("C", _subscript(g))),
+    description="Seshadri's desingularisation for a curve of genus $g",
   )
 end
 
@@ -871,8 +908,10 @@ julia> euler(narasimhan_ramanans_desingularisation(3)), euler(seshadris_desingul
 function narasimhan_ramanans_desingularisation(genus::Integer)
   g = Int(genus)
   g >= 3 || throw(ArgumentError("genus needs to be at least 3"))
-  return blowup(
-    seshadris_desingularisation(g), 2^(2g) * grassmannian(3, g); codimension=6
+  return named(
+    blowup(seshadris_desingularisation(g), 2^(2g) * grassmannian(3, g); codimension=6);
+    notation=Expr(:call, :NR, Symbol("C", _subscript(g))),
+    description="Narasimhan-Ramanan's desingularisation for a curve of genus $g",
   )
 end
 
@@ -914,7 +953,11 @@ function kirwans_desingularisation(genus::Integer)
   g = Int(genus)
   g >= 3 || throw(ArgumentError("genus needs to be at least 3"))
   centre = 2^(2g) * projective_bundle(grassmannian(2, g), g - 1)
-  return blowup(narasimhan_ramanans_desingularisation(g), centre; codimension=3)
+  return named(
+    blowup(narasimhan_ramanans_desingularisation(g), centre; codimension=3);
+    notation=Expr(:call, :Kir, Symbol("C", _subscript(g))),
+    description="Kirwan's desingularisation for a curve of genus $g",
+  )
 end
 
 """
@@ -974,7 +1017,12 @@ function moduli_parabolic_vector_bundles_rank_two(genus::Integer, weights)
     )
   arises_from_variety(result) ||
     error("the weights do not give a smooth projective variety")
-  return result
+  return named(
+    result;
+    notation=Expr(:call, :Mpar, Symbol("C", _subscript(genus)), points),
+    description="moduli of parabolic rank 2 bundles on a curve of genus $genus with \
+                 $points marked points",
+  )
 end
 
 """
@@ -998,6 +1046,15 @@ true
 ```
 """
 function quot_scheme_curve(genus::Integer, quotient_length::Integer, rank::Integer)
+  return named(
+    _quot_scheme_curve(genus, quotient_length, rank);
+    notation=Expr(
+      :call, :Quot, Symbol("C", _subscript(genus)), quotient_length, rank
+    ),
+  )
+end
+
+function _quot_scheme_curve(genus::Integer, quotient_length::Integer, rank::Integer)
   return sum(
     (
       begin
@@ -1312,7 +1369,11 @@ true
 function fano_variety_lines_cubic(n::Integer)
   n >= 2 || throw(ArgumentError("dimension needs to be at least 2"))
   X = hypersurface(3, n)
-  return (hilbtwo(X) - Pn(n) * X)(-2)
+  return named(
+    (hilbtwo(X) - Pn(n) * X)(-2);
+    notation=Expr(:call, :F, notation(X)),
+    description="Fano variety of lines on a cubic hypersurface of dimension $n",
+  )
 end
 
 """
@@ -1397,7 +1458,12 @@ function fano_variety_intersection_quadrics_odd(g::Integer, k::Integer)
       )
     end
   end
-  return HodgeDiamond(finish(builder); from_variety=true)
+  return HodgeDiamond(
+    finish(builder);
+    from_variety=true,
+    description="Fano variety of $k-planes on the intersection of two quadrics in \
+                 ℙ$(_superscript(2g + 1))",
+  )
 end
 
 """
@@ -1425,6 +1491,7 @@ For ``k=g-1`` we get a finite reduced scheme of length ``4^g``:
 
 ```jldoctest
 julia> fano_variety_intersection_quadrics_even(4, 3)
+Fano variety of 3-planes on the intersection of two quadrics in ℙ⁸
   256
 ```
 """
@@ -1444,6 +1511,8 @@ function fano_variety_intersection_quadrics_even(g::Integer, k::Integer)
   return HodgeDiamond(
     diagonal_polynomial(cell_count(degree) for degree in 0:(i * (2g - 2i)));
     from_variety=true,
+    description="Fano variety of $k-planes on the intersection of two quadrics in \
+                 ℙ$(_superscript(2g))",
   )
 end
 
@@ -1881,6 +1950,7 @@ brauer_severi(1, 2, [(1, 1), (1, 1), (1, 1)])
 
 # output
 
+Brauer-Severi scheme of a hereditary order of degree 2 on a curve of genus 1, ramified in 3 points
           1
       1       1
   0       5       0
@@ -1897,8 +1967,15 @@ function brauer_severi(genus::Integer, degree::Integer, ramification)
   all(all(part >= 1 for part in datum) for datum in data) ||
     throw(ArgumentError("ramification data must be positive integers"))
 
-  return Pn(degree - 1) * (curve(genus) - length(data) * point()) +
-         sum((_brauer_severi_fibre(datum) for datum in data); init=zero(HodgeDiamond))
+  return named(
+    Pn(degree - 1) * (curve(genus) - length(data) * point()) +
+    sum((_brauer_severi_fibre(datum) for datum in data); init=zero(HodgeDiamond));
+    notation=Expr(
+      :call, Symbol("BS", _subscript(degree)), Symbol("C", _subscript(genus)), data...
+    ),
+    description="Brauer-Severi scheme of a hereditary order of degree $degree on a curve \
+                 of genus $genus, ramified in $(length(data)) points",
+  )
 end
 
 """

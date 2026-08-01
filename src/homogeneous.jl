@@ -87,7 +87,9 @@ function partial_flag_variety(dynkin::AbstractString, vertices)
   end
   poincare = divexact(numerator, denominator)
   return HodgeDiamond(
-    diagonal_polynomial(coeff(poincare, i) for i in 0:degree(poincare)); from_variety=true
+    diagonal_polynomial(coeff(poincare, i) for i in 0:degree(poincare));
+    from_variety=true,
+    notation=Expr(:call, :/, Symbol(dynkin), :P),
   )
 end
 
@@ -106,8 +108,10 @@ julia> dimension(generalised_grassmannian("E6", 1))
 16
 ```
 """
-generalised_grassmannian(dynkin::AbstractString, k::Integer) =
-  partial_flag_variety(dynkin, [i for i in 1:_dynkin_rank(dynkin) if i != k])
+generalised_grassmannian(dynkin::AbstractString, k::Integer) = named(
+  partial_flag_variety(dynkin, [i for i in 1:_dynkin_rank(dynkin) if i != k]);
+  notation=Expr(:call, :/, Symbol(dynkin), Symbol("P", _subscript(k))),
+)
 
 """
     grassmannian(k, n)
@@ -137,7 +141,9 @@ true
 function grassmannian(k::Integer, n::Integer)
   0 <= k <= n || throw(ArgumentError("need 0 ≤ k ≤ n"))
   (n == 0 || n == k || k == 0) && return point()
-  return generalised_grassmannian("A$(n - 1)", k)
+  return named(
+    generalised_grassmannian("A$(n - 1)", k); notation=Expr(:call, :Gr, k, n)
+  )
 end
 
 """
@@ -174,10 +180,15 @@ function orthogonal_grassmannian(k::Integer, n::Integer)
     # an isotropic subspace of dimension n/2 - 1 lies in exactly one maximal isotropic
     # subspace of each of the two families, so it is the two fork vertices that go
     vertices = k == half - 1 ? (1:(half - 2)) : [i for i in 1:half if i != k]
-    return partial_flag_variety("D$half", vertices)
+    return named(
+      partial_flag_variety("D$half", vertices); notation=Expr(:call, :OGr, k, n)
+    )
   end
   k <= half || throw(ArgumentError("need k ≤ (n-1)/2 for odd n"))
-  return partial_flag_variety("B$half", [i for i in 1:half if i != k])
+  return named(
+    partial_flag_variety("B$half", [i for i in 1:half if i != k]);
+    notation=Expr(:call, :OGr, k, n),
+  )
 end
 
 """
@@ -211,7 +222,10 @@ function symplectic_grassmannian(k::Integer, n::Integer)
   iseven(n) || throw(ArgumentError("n needs to be even"))
   half = n ÷ 2
   0 <= k <= half || throw(ArgumentError("need 0 ≤ k ≤ n/2"))
-  return partial_flag_variety("C$half", [i for i in 1:half if i != k])
+  return named(
+    partial_flag_variety("C$half", [i for i in 1:half if i != k]);
+    notation=Expr(:call, :SGr, k, n),
+  )
 end
 
 """
@@ -236,7 +250,8 @@ julia> [dimension(lagrangian_grassmannian(n)) for n in 1:5]
  15
 ```
 """
-lagrangian_grassmannian(n::Integer) = symplectic_grassmannian(n, 2n)
+lagrangian_grassmannian(n::Integer) =
+  named(symplectic_grassmannian(n, 2n); notation=Expr(:call, :LGr, n, 2n))
 
 """
     horospherical(label)
@@ -299,8 +314,11 @@ function horospherical(dynkin::AbstractString, parabolic_Y::Integer, parabolic_Z
     throw(ArgumentError("no horospherical varieties of type $dynkin"))
   end
 
-  return projective_bundle(Y, total_dimension - dimension(Y) + 1) + Z -
-         projective_bundle(Z, total_dimension - dimension(Z))
+  return named(
+    projective_bundle(Y, total_dimension - dimension(Y) + 1) + Z -
+    projective_bundle(Z, total_dimension - dimension(Z));
+    description="horospherical variety of Picard rank one of type $dynkin",
+  )
 end
 
 """
@@ -321,5 +339,7 @@ true
 function odd_symplectic_grassmannian(k::Integer, n::Integer)
   isodd(n) || throw(ArgumentError("n needs to be odd"))
   k == 1 && return Pn(n - 1)
-  return horospherical("C$(n ÷ 2)", k, k - 1)
+  return named(
+    horospherical("C$(n ÷ 2)", k, k - 1); notation=Expr(:call, :SGr, k, n)
+  )
 end

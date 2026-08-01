@@ -108,11 +108,14 @@ const R, x, y = hodge_ring()
 
   @testset "printing" begin
     plain(X) = repr(MIME("text/plain"), X)
-    @test plain(Pn(1)) == "      1\n  0       0\n      1"
+    # a named diamond is captioned, an anonymous one is not
+    @test plain(Pn(1)) == "ℙ¹\n      1\n  0       0\n      1"
+    @test plain(named(Pn(1))) == "      1\n  0       0\n      1"
     @test plain(zero(HodgeDiamond)) == "  0"
     @test plain(K3()) ==
-      "          1\n      0        0\n  1       20       1\n      0        0\n          1"
-    @test repr(K3()) == "Hodge diamond of size 3 and dimension 2"
+      "K3 surface\n          1\n      0        0\n  1       20       1\n      0        0\n          1"
+    @test repr(K3()) == "K3 surface"
+    @test repr(named(K3())) == "Hodge diamond of size 3 and dimension 2"
 
     @test sprint(io -> pprint(io, Pn(2) * curve(3); hide_zeroes=true)) ==
       "      1\n  3       3\n      2\n  3       3\n      2\n  3       3\n      1"
@@ -125,10 +128,10 @@ const R, x, y = hodge_ring()
     latex(X) = sprint((io, Y) -> show(io, MIME("text/latex"), Y), X)
     @test occursin("\$0\$", latex(K3()))
     HD.HIDE_ZEROES[] = true
-    @test plain(Pn(1)) == "  1\n\n  1"
+    @test plain(named(Pn(1))) == "  1\n\n  1"
     @test !occursin("\$0\$", latex(K3()))
     HD.HIDE_ZEROES[] = false
-    @test plain(Pn(1)) == "      1\n  0       0\n      1"
+    @test plain(named(Pn(1))) == "      1\n  0       0\n      1"
   end
 
   @testset "Hochschild homology" begin

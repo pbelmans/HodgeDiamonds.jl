@@ -249,8 +249,8 @@ const LEFSCHETZ = Symbol("𝕃")
 # The operator of a call is not one of the pieces, hence dropping the first argument.
 _atoms(name) = name isa Expr ? sum(_atoms, @view(name.args[2:end]); init=0) : 1
 
-# `Expr(:call, :×, …)` rather than a string, so that Base supplies the brackets: the notation
-# of `(K3 ⊔ ℙ²) × C₃` comes out right without us knowing anything about precedence.
+# An expression rather than a string, so that Base supplies the brackets: the notation of
+# `(K3 ⊔ ℙ²) × C₃` comes out right without us knowing anything about precedence.
 function _compose(operator::Symbol, left, right)
   (left === nothing || right === nothing) && return nothing
   # products and unions are associative, so a nested call to the same operator is spliced into

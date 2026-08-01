@@ -10,6 +10,7 @@ Hodge diamond of the point, the unit for multiplication. The empty space is
 
 ```jldoctest
 julia> point()
+pt
   1
 
 julia> zero(HodgeDiamond)
@@ -19,7 +20,7 @@ julia> point() != lefschetz()
 true
 ```
 """
-point() = HodgeDiamond(one(R))
+point() = HodgeDiamond(one(R); notation=:pt)
 
 """
     lefschetz()
@@ -31,6 +32,7 @@ Hodge diamond of the Lefschetz motive, the Hodge--Poincaré polynomial of the af
 
 ```jldoctest
 julia> lefschetz()
+Lefschetz class
       0
   0       0
       1
@@ -43,6 +45,7 @@ Powers give the higher-dimensional affine spaces:
 
 # output
 
+𝕃^3
               0
           0       0
       0       0       0
@@ -52,7 +55,7 @@ Powers give the higher-dimensional affine spaces:
               1
 ```
 """
-lefschetz() = point()(1)
+lefschetz() = named(point()(1); notation=LEFSCHETZ, description="Lefschetz class")
 
 """
     Pn(n)
@@ -72,7 +75,7 @@ true
 """
 function Pn(n::Integer)
   n >= 0 || throw(ArgumentError("dimension needs to be non-negative"))
-  return HodgeDiamond(sum((x * y)^i for i in 0:n))
+  return HodgeDiamond(sum((x * y)^i for i in 0:n); notation=Symbol("ℙ", _superscript(n)))
 end
 
 """
@@ -93,6 +96,7 @@ julia> curve(1) == abelian(1)
 true
 
 julia> curve(2)
+curve of genus 2
       1
   2       2
       1
@@ -100,7 +104,11 @@ julia> curve(2)
 """
 function curve(genus::Integer)
   genus >= 0 || throw(ArgumentError("genus needs to be non-negative"))
-  return HodgeDiamond(1 + genus * x + genus * y + x * y)
+  return HodgeDiamond(
+    1 + genus * x + genus * y + x * y;
+    notation=Symbol("C", _subscript(genus)),
+    description="curve of genus $genus",
+  )
 end
 
 """
@@ -148,6 +156,7 @@ symn(3, 2)
 
 # output
 
+Sym²(C₃)
           1
       3        3
   3       10       3
@@ -169,7 +178,10 @@ true
 function symn(genus::Integer, n::Integer)
   genus >= 0 || throw(ArgumentError("genus needs to be non-negative"))
   n < 0 && return zero(HodgeDiamond)
-  return HodgeDiamond([_symn_hodge(genus, n, p, q) for p in 0:n, q in 0:n])
+  return HodgeDiamond(
+    [_symn_hodge(genus, n, p, q) for p in 0:n, q in 0:n];
+    notation=Expr(:call, Symbol("Sym", _superscript(n)), Symbol("C", _subscript(genus))),
+  )
 end
 
 # The binomial sum is valid for p <= q with p + q <= n; the rest of the square follows by
@@ -196,7 +208,7 @@ julia> abelian(2) == surface(1, 2, 4)
 true
 ```
 """
-abelian(n::Integer) = curve(1)^n
+abelian(n::Integer) = named(curve(1)^n; notation=Symbol("A", _subscript(n)))
 
 """
     jacobian(genus)
@@ -211,6 +223,7 @@ jacobian(3)
 
 # output
 
+Jacobian of a curve of genus 3
               1
           3       3
       3       9       3
@@ -228,7 +241,11 @@ julia> jacobian(1) == curve(1)
 true
 ```
 """
-jacobian(genus::Integer) = abelian(genus)
+jacobian(genus::Integer) = named(
+  abelian(genus);
+  notation=Expr(:call, :Jac, Symbol("C", _subscript(genus))),
+  description="Jacobian of a curve of genus $genus",
+)
 
 """
     kummer_resolution(g)
@@ -254,8 +271,12 @@ function kummer_resolution(g::Integer)
     (coefficient, exponents) for
     (coefficient, exponents) in each_term(f) if iseven(exponents[1] + exponents[2])
   )
-  return HodgeDiamond(invariant) +
-         sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond))
+  return named(
+    HodgeDiamond(invariant) +
+    sum((2^(2g) * point()(i) for i in 1:(g - 1)); init=zero(HodgeDiamond));
+    notation=Expr(:call, :Kum, Symbol("A", _subscript(g))),
+    description="resolved Kummer variety of an abelian variety of dimension $g",
+  )
 end
 
 # ── complete intersections ───────────────────────────────────────────────────────
@@ -371,7 +392,16 @@ function complete_intersection(degrees, dimension::Integer)
     M[i + 1, i + 1] = 1
     M[i + 1, N - i + 1] = generating[i + 1, N - i + 1]
   end
-  return HodgeDiamond(M; from_variety=true)
+  # a single degree reads as `X₅ ⊂ ℙ⁴`, several as `X(2, 2) ⊂ ℙ⁵`
+  ambient = Symbol("ℙ", _superscript(N + length(multidegree)))
+  degrees_notation = if length(multidegree) == 1
+    Symbol("X", _subscript(only(multidegree)))
+  else
+    Expr(:call, :X, multidegree...)
+  end
+  return HodgeDiamond(
+    M; from_variety=true, notation=Expr(:call, :⊂, degrees_notation, ambient)
+  )
 end
 
 """
@@ -396,6 +426,7 @@ K3()
 
 # output
 
+K3 surface
           1
       0        0
   1       20       1
@@ -408,7 +439,7 @@ julia> K3() == hypersurface(4, 2)
 true
 ```
 """
-K3() = complete_intersection(4, 2)
+K3() = named(complete_intersection(4, 2); notation=:K3, description="K3 surface")
 
 """
     enriques()
@@ -428,6 +459,7 @@ enriques()
 
 # output
 
+Enriques surface
           1
       0        0
   0       10       0
@@ -440,6 +472,7 @@ enriques("classical")
 
 # output
 
+classical Enriques surface
           1
       0        1
   0       12       0
@@ -452,6 +485,7 @@ enriques("singular")
 
 # output
 
+singular Enriques surface
           1
       1        0
   1       10       1
@@ -464,6 +498,7 @@ enriques("supersingular")
 
 # output
 
+supersingular Enriques surface
           1
       1        1
   1       12       1
@@ -471,13 +506,19 @@ enriques("supersingular")
           1
 ```
 """
-enriques() = surface(0, 0, 10)
+enriques() = named(surface(0, 0, 10); notation=:Enr, description="Enriques surface")
 
 function enriques(kind::AbstractString)
-  kind == "classical" && return HodgeDiamond([1 0 0; 1 12 1; 0 0 1])
-  kind == "singular" && return HodgeDiamond([1 1 1; 0 10 0; 1 1 1])
-  kind == "supersingular" && return HodgeDiamond([1 1 1; 1 12 1; 1 1 1])
-  throw(ArgumentError("invalid choice for characteristic 2: $kind"))
+  M = if kind == "classical"
+    [1 0 0; 1 12 1; 0 0 1]
+  elseif kind == "singular"
+    [1 1 1; 0 10 0; 1 1 1]
+  elseif kind == "supersingular"
+    [1 1 1; 1 12 1; 1 1 1]
+  else
+    throw(ArgumentError("invalid choice for characteristic 2: $kind"))
+  end
+  return HodgeDiamond(M; notation=:Enr, description="$kind Enriques surface")
 end
 
 """
@@ -501,6 +542,7 @@ ruled(5)
 
 # output
 
+ruled surface over a curve of genus 5
           1
       5       5
   0       2       0
@@ -508,21 +550,23 @@ ruled(5)
           1
 ```
 """
-ruled(genus::Integer) = surface(0, genus, 2)
+ruled(genus::Integer) = named(
+  surface(0, genus, 2); description="ruled surface over a curve of genus $genus"
+)
 
 """
     inoue()
 
 Hodge diamond of an Inoue surface, a non-Kähler surface for which Hodge symmetry fails.
 """
-inoue() = HodgeDiamond([1 1 0; 0 0 0; 0 1 1])
+inoue() = HodgeDiamond([1 1 0; 0 0 0; 0 1 1]; notation=:Inoue, description="Inoue surface")
 
 """
     hopf()
 
 Hodge diamond of a Hopf surface, which agrees with that of an [`inoue`](@ref) surface.
 """
-hopf() = inoue()
+hopf() = named(inoue(); notation=:Hopf, description="Hopf surface")
 
 """
     kodaira_primary()
@@ -532,7 +576,8 @@ Hodge diamond of a primary Kodaira surface.
 These are non-Kähler surfaces with ``\\mathrm{b}_1=3``, so Hodge symmetry fails:
 ``\\mathrm{h}^{1,0}=1`` and ``\\mathrm{h}^{0,1}=2``.
 """
-kodaira_primary() = HodgeDiamond([1 2 1; 1 2 1; 1 2 1])
+kodaira_primary() =
+  HodgeDiamond([1 2 1; 1 2 1; 1 2 1]; description="primary Kodaira surface")
 
 """
     kodaira_secondary()
@@ -542,7 +587,7 @@ Hodge diamond of a secondary Kodaira surface.
 These are non-Kähler surfaces with ``\\mathrm{b}_1=1`` and ``\\mathrm{b}_2=0``, so they
 have the same Hodge diamond as the Hopf and Inoue surfaces.
 """
-kodaira_secondary() = inoue()
+kodaira_secondary() = named(inoue(); description="secondary Kodaira surface")
 
 # ── weighted hypersurfaces and cyclic covers ─────────────────────────────────────
 
@@ -625,7 +670,11 @@ function weighted_hypersurface(degree::Integer, weights)
     # for odd `n` the middle of the antidiagonal is also on the diagonal, and gets both
     M[i + 1, n - i] += primitive(n - i - 1)
   end
-  return HodgeDiamond(M; from_variety=true)
+  return HodgeDiamond(
+    M;
+    from_variety=true,
+    notation=Expr(:call, :⊂, Symbol("X", _subscript(degree)), Expr(:call, :ℙ, W...)),
+  )
 end
 
 """
@@ -671,12 +720,25 @@ See Proposition 3.1 of [1605.05648v3].
 """
 function gushel_mukai(n::Integer)
   n in 1:6 || throw(ArgumentError("there is no Gushel--Mukai variety of dimension $n"))
-  n == 1 && return curve(6)
-  n == 2 && return K3()
-  n == 3 && return curve(10)(1) + point() + lefschetz()^3
-  n == 4 && return K3()(1) + point() + 2 * lefschetz()^2 + lefschetz()^4
-  n == 5 && return curve(10)(2) + Pn(5)
-  return K3()(2) + lefschetz()^3 + Pn(6)
+  X = if n == 1
+    curve(6)
+  elseif n == 2
+    K3()
+  elseif n == 3
+    curve(10)(1) + point() + lefschetz()^3
+  elseif n == 4
+    K3()(1) + point() + 2 * lefschetz()^2 + lefschetz()^4
+  elseif n == 5
+    curve(10)(2) + Pn(5)
+  else
+    K3()(2) + lefschetz()^3 + Pn(6)
+  end
+  dimensions = ("curve", "surface", "threefold", "fourfold", "fivefold", "sixfold")
+  return named(
+    X;
+    notation=Symbol("GM", _subscript(n)),
+    description="Gushel-Mukai $(dimensions[n])",
+  )
 end
 
 #: ``\mathrm{h}^{1,2}`` of the Fano threefolds, indexed by Picard rank and then by their
@@ -727,7 +789,12 @@ function fano_threefold(rank::Integer, identifier::Integer)
   identifier in eachindex(FANO_THREEFOLD_H12[rank]) ||
     throw(ArgumentError("no Fano threefold with rank $rank and number $identifier"))
   h12 = FANO_THREEFOLD_H12[rank][identifier]
-  return HodgeDiamond([1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1]; from_variety=true)
+  return HodgeDiamond(
+    [1 0 0 0; 0 rank h12 0; 0 h12 rank 0; 0 0 0 1];
+    from_variety=true,
+    notation=Expr(:call, :X, rank, identifier),
+    description="Fano threefold $rank.$identifier in the Mori-Mukai classification",
+  )
 end
 
 # ── other ───────────────────────────────────────────────────────────────────────
@@ -775,7 +842,11 @@ true
 """
 function Mzeronbar(n::Integer)
   n >= 2 || throw(ArgumentError("n needs to be at least 2"))
-  return HodgeDiamond(_manin(Int(n)))
+  return HodgeDiamond(
+    _manin(Int(n));
+    notation=Expr(:call, :M̄, 0, n),
+    description="moduli of $n-pointed stable curves of genus 0",
+  )
 end
 
 # ── mathematical notation ────────────────────────────────────────────────────────
