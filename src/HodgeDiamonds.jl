@@ -78,7 +78,7 @@ export blowup, mirror, projective_bundle
 
 export 𝕃, ℙ, χ, χ_top, χ_y
 export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surface, symn
-export K3, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
+export K3, bielliptic, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
 export complete_intersection, cyclic_cover, hypersurface, weighted_hypersurface
 export fano_threefold,
   fano_variety_intersection_quadrics_even,

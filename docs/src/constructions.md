@@ -37,6 +37,7 @@ quot_scheme_curve
 surface
 ruled
 K3
+bielliptic
 enriques
 hilbn
 nestedhilbn

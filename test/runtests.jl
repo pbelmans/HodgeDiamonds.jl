@@ -291,6 +291,13 @@ const R, x, y = hodge_ring()
     @test mirror(mirror(hypersurface(5, 3))) == hypersurface(5, 3)
   end
 
+  @testset "bielliptic surfaces" begin
+    @test bielliptic() == surface(0, 1, 2) == ruled(1)
+    @test euler(bielliptic()) == 0
+    @test arises_from_variety(bielliptic())
+    @test description(bielliptic()) == "bielliptic surface"
+  end
+
   @testset "Hilbert schemes" begin
     @test hilbn(K3(), 0) == point()
     @test hilbn(K3(), 1) == K3() == K3n(1)

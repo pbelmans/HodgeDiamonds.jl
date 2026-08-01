@@ -522,6 +522,40 @@ function enriques(kind::AbstractString)
 end
 
 """
+    bielliptic()
+
+Hodge diamond of a bielliptic (or hyperelliptic) surface, a quotient of a product of two
+elliptic curves by a finite group acting freely.
+
+# Examples
+
+```jldoctest
+bielliptic()
+
+# output
+
+bielliptic surface
+          1
+      1       1
+  0       2       0
+      1       1
+          1
+```
+
+Bielliptic surfaces have vanishing Euler characteristic, and share their Hodge diamond with
+the ruled surfaces over an elliptic curve:
+
+```jldoctest
+julia> χ_top(bielliptic())
+0
+
+julia> bielliptic() == ruled(1)
+true
+```
+"""
+bielliptic() = named(surface(0, 1, 2); description="bielliptic surface")
+
+"""
     ruled(genus)
 
 Hodge diamond of a ruled surface, a ``\\mathbb{P}^1``-bundle over a curve of the given
