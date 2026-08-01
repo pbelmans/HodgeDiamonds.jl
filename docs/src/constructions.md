@@ -14,6 +14,7 @@ hypersurface
 weighted_hypersurface
 cyclic_cover
 complete_intersection
+complete_intersection_grassmannian
 ```
 
 ## Curves and moduli spaces of sheaves on them

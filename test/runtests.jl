@@ -283,6 +283,38 @@ const R, x, y = hodge_ring()
     @test cyclic_cover(6, 2, 3) == fano_threefold(1, 1)
   end
 
+  @testset "complete intersections in Grassmannians" begin
+    # Gr(1, n) is a projective space
+    @test all(
+      complete_intersection_grassmannian(1, 7, degrees) ==
+      complete_intersection(degrees, 6 - length(degrees)) for
+      degrees in ([1], [2], [3], [5], [2, 2], [4, 2], [2, 2, 2], [3, 2, 1])
+    )
+    # Gr(2, 4) is a quadric fourfold, so a section is one quadric more in P^5
+    @test all(
+      complete_intersection_grassmannian(2, 4, degrees) ==
+      complete_intersection([2; degrees], 4 - length(degrees)) for
+      degrees in ([1], [2], [3], [1, 1], [2, 2], [3, 1], [1, 1, 1], [2, 2, 2])
+    )
+    # Gushel--Mukai varieties are quadric sections of linear sections of Gr(2, 5)
+    @test all(
+      complete_intersection_grassmannian(2, 5, [2; fill(1, 5 - n)]) == gushel_mukai(n) for
+      n in 1:5
+    )
+    # Mukai's linear sections of Gr(2, 6) in genus 8
+    @test complete_intersection_grassmannian(2, 6, fill(1, 5)) == fano_threefold(1, 7)
+    @test complete_intersection_grassmannian(2, 6, fill(1, 6)) == K3()
+    @test complete_intersection_grassmannian(2, 6, fill(1, 7)) == curve(8)
+    # cutting nothing away, and Grassmannians without moduli
+    @test complete_intersection_grassmannian(2, 5, Int[]) == grassmannian(2, 5)
+    @test complete_intersection_grassmannian(0, 5, Int[]) == point()
+    @test complete_intersection_grassmannian(5, 5, Int[]) == point()
+    @test_throws ArgumentError complete_intersection_grassmannian(2, 5, [0])
+    @test_throws ArgumentError complete_intersection_grassmannian(2, 5, [-1])
+    @test_throws ArgumentError complete_intersection_grassmannian(6, 5, Int[])
+    @test_throws ArgumentError complete_intersection_grassmannian(2, 5, fill(1, 7))
+  end
+
   @testset "blowups and bundles" begin
     @test blowup(Pn(2), 6 * point()) == hypersurface(3, 2)
     @test projective_bundle(point(), 3) == Pn(2)

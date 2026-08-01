@@ -11,7 +11,7 @@ module HodgeDiamonds
 
 using AbstractAlgebra
 using Base.GMP: MPZ
-using Combinatorics: multiexponents, partitions, powerset
+using Combinatorics: combinations, multiexponents, partitions, powerset
 using PrecompileTools: @compile_workload
 using Semisimple: Semisimple
 
@@ -46,6 +46,7 @@ include("diamond.jl")
 include("hochschild.jl")
 include("varieties.jl")
 include("homogeneous.jl")
+include("localisation.jl")
 include("moduli.jl")
 
 # ── exports from diamond.jl and hochschild.jl ───────────────────────────────────
@@ -79,7 +80,11 @@ export blowup, mirror, projective_bundle, standard_flip
 export 𝕃, ℙ, χ, χ_top, χ_y
 export Pn, abelian, curve, jacobian, kummer_resolution, lefschetz, point, surface, symn
 export K3, bielliptic, enriques, hopf, inoue, kodaira_primary, kodaira_secondary, ruled
-export complete_intersection, cyclic_cover, hypersurface, weighted_hypersurface
+export complete_intersection,
+  complete_intersection_grassmannian,
+  cyclic_cover,
+  hypersurface,
+  weighted_hypersurface
 export fano_threefold,
   fano_variety_intersection_quadrics_even,
   fano_variety_intersection_quadrics_odd,
