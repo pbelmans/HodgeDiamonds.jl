@@ -42,6 +42,7 @@ hilbn
 nestedhilbn
 hilbtwo
 hilbthree
+enriques_hilbn_cover
 hopf
 inoue
 kodaira_primary

@@ -238,6 +238,35 @@ const R, x, y = hodge_ring()
     @test_throws ArgumentError hilbn(Pn(3), 2)
   end
 
+  @testset "universal cover of the Hilbert scheme of an Enriques surface" begin
+    # for a single point the cover is the K3 surface covering the Enriques surface
+    @test enriques_hilbn_cover(1) == K3()
+    # also computed in [MR3778120], whose h^{2,2} reads 131 instead of 132
+    @test Matrix(enriques_hilbn_cover(2)) == BigInt[
+      1 0 0 0 1
+      0 12 0 10 0
+      0 0 132 0 0
+      0 10 0 12 0
+      1 0 0 0 1
+    ]
+    # the covering map is étale of degree 2
+    @test all(
+      euler(enriques_hilbn_cover(n)) == 2 * euler(hilbn(enriques(), n)) for n in 1:6
+    )
+    @test all(dimension(enriques_hilbn_cover(n)) == 2n for n in 1:6)
+    @test all(is_hodge_symmetric(enriques_hilbn_cover(n)) for n in 1:6)
+    @test all(is_serre_symmetric(enriques_hilbn_cover(n)) for n in 1:6)
+    # Calabi-Yau by Proposition 1.6 of [MR2578804], so the cover has trivial canonical
+    # bundle and no intermediate holomorphic forms
+    @test all(
+      [enriques_hilbn_cover(n)[p, 0] for p in 0:(2n)] == [1; zeros(BigInt, 2n - 1); 1] for
+      n in 2:6
+    )
+    # the covering involution acts trivially on H^2 for n at least 3, see [MR3778120]
+    @test [betti(enriques_hilbn_cover(n))[3] for n in 1:6] == BigInt[22, 12, 11, 11, 11, 11]
+    @test_throws ArgumentError enriques_hilbn_cover(0)
+  end
+
   @testset "hyperkähler varieties" begin
     @test generalised_kummer(1) == point()
     @test generalised_kummer(2) == K3()

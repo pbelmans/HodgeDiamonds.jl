@@ -99,7 +99,15 @@ export generalised_grassmannian,
 
 # ── exports from moduli.jl ──────────────────────────────────────────────────────
 
-export K3n, generalised_kummer, hilbn, hilbthree, hilbtwo, nestedhilbn, ogrady6, ogrady10
+export K3n,
+  enriques_hilbn_cover,
+  generalised_kummer,
+  hilbn,
+  hilbthree,
+  hilbtwo,
+  nestedhilbn,
+  ogrady6,
+  ogrady10
 export brauer_severi,
   kirwans_desingularisation,
   moduli_higgs_bundles,

@@ -149,6 +149,94 @@ _substitute_powers(f::HPoly, power::Int, sign::Int) =
   )
 
 """
+    enriques_hilbn_cover(n)
+
+Hodge diamond of the universal covering space of the Hilbert scheme of `n` points on a
+complex Enriques surface ``S``. By Theorem 3.1 of [MR2863907] the Hilbert scheme has
+fundamental group of order 2, so the covering is étale of degree 2, and by Proposition 1.6
+of [MR2578804] it is a Calabi-Yau variety of dimension ``2n`` for ``n\\geq 2``.
+
+Let ``L`` be the non-trivial rank one local system on ``S``, the one belonging to its K3
+double cover, so that ``\\mathrm{H}^\\bullet(S,L)`` is the anti-invariant part of the
+cohomology of that K3 surface. By Corollary 1.3 of [MR2578804] the cohomology of the
+covering space is
+``\\mathrm{H}^\\bullet(S^{[n]})\\oplus\\mathrm{H}^\\bullet(S^{[n]},L^{[n]})``, and the
+twisted summand is Göttsche's product with the Hodge numbers of ``S`` replaced by those of
+``\\mathrm{H}^\\bullet(S,L^{\\otimes k})`` in the factor of multiplicity ``k``. Since ``L``
+has order 2 this changes only the factors of odd multiplicity.
+
+  - [MR2578804] Nieper-Wißkirchen, Twisted cohomology of the Hilbert schemes of points on
+    surfaces. Doc. Math. 14 (2009), 749--770.
+  - [MR2863907] Oguiso--Schröer, Enriques manifolds. J. Reine Angew. Math. 661 (2011),
+    215--235.
+
+For `n = 2` the Hodge numbers are also computed in [MR3778120]. They agree with the ones
+below except for ``\\mathrm{h}^{2,2}``, which is printed as 131 there. The Euler
+characteristic favours the 132 below: an étale double cover doubles the Euler
+characteristic, so it has to be twice the 90 of `hilbn(enriques(), 2)`, whereas 131 gives
+179.
+
+  - [MR3778120] Hayashi, Universal covering Calabi-Yau manifolds of the Hilbert schemes of
+    ``n``-points of Enriques surfaces. Asian J. Math. 21 (2017), no. 6, 1099--1120.
+
+# Examples
+
+For `n = 1` the covering space is the K3 surface covering the Enriques surface:
+
+```jldoctest
+julia> enriques_hilbn_cover(1) == K3()
+true
+```
+
+```jldoctest
+enriques_hilbn_cover(2)
+
+# output
+
+                    1
+               0         0
+          0        12        0
+      0        0         0        0
+  1       10       132       10       1
+      0        0         0        0
+          0        12        0
+               0         0
+                    1
+```
+
+The covering map is étale of degree 2, so it doubles the Euler characteristic:
+
+```jldoctest
+julia> all(euler(enriques_hilbn_cover(n)) == 2 * euler(hilbn(enriques(), n)) for n in 1:5)
+true
+```
+
+The second Betti number is 12 for `n = 2`, but the covering involution acts trivially on
+the second cohomology as soon as `n` is at least 3, so it drops to 11 there, as in
+[MR3778120]:
+
+```jldoctest
+julia> [betti(enriques_hilbn_cover(n))[3] for n in 1:5]
+5-element Vector{BigInt}:
+ 22
+ 12
+ 11
+ 11
+ 11
+```
+"""
+function enriques_hilbn_cover(n::Integer)
+  n = Int(n)
+  n >= 1 || throw(ArgumentError("n needs to be at least 1"))
+  S, cover = enriques(), K3()
+  invariant = BigInt[S[p, q] for p in 0:2, q in 0:2]
+  anti_invariant = BigInt[cover[p, q] - S[p, q] for p in 0:2, q in 0:2]
+  untwisted = hilbn_series(invariant, n)[end]
+  twisted = hilbn_series(k -> isodd(k) ? anti_invariant : invariant, n)[end]
+  return HodgeDiamond(dense_to_polynomial(untwisted + twisted); from_variety=true)
+end
+
+"""
     K3n(n)
 
 Hodge diamond of the Hilbert scheme of `n` points on a K3 surface, the first family of
