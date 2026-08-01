@@ -24,6 +24,8 @@ symn
 jacobian
 moduli_vector_bundles
 seshadris_desingularisation
+narasimhan_ramanans_desingularisation
+kirwans_desingularisation
 moduli_parabolic_vector_bundles_rank_two
 quot_scheme_curve
 ```

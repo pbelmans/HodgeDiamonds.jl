@@ -748,6 +748,88 @@ _shift_series(series::Vector{T}, shift::Int, N::Int) where {T<:Number} =
   [get(series, m - shift + 1, zero(T)) for m in 0:N]
 
 """
+    narasimhan_ramanans_desingularisation(genus)
+
+Hodge diamond of the Narasimhan--Ramanan desingularisation of the moduli space of rank 2
+bundles with trivial determinant on a curve of the given genus, at least 3.
+
+This is the moduli space of Hecke cycles. By Theorem 5.6 of [MR2099191] the morphism from
+Kirwan's to Seshadri's desingularisation is a composition of two blowdowns, and [MR2122217]
+identifies the intermediate variety with the moduli space of Hecke cycles. It is the blowup
+of Seshadri's desingularisation in ``2^{2g}`` copies of ``\\operatorname{Gr}(3,g)``, which
+sit in codimension 6.
+
+  - [MR2099191] Kiem--Li, Desingularizations of the moduli space of rank 2 bundles over a
+    curve. Math. Ann. 330 (2004), 491--518.
+  - [MR2122217] Choe--Choy--Kiem, Cohomology of the moduli space of Hecke cycles. Topology
+    44 (2005), 585--608.
+
+# Examples
+
+It desingularises a moduli space of dimension ``3g-3``:
+
+```jldoctest
+julia> dimension(narasimhan_ramanans_desingularisation(4))
+9
+```
+
+Seshadri's desingularisation is a blowdown of it, so it has a smaller Euler characteristic:
+
+```jldoctest
+julia> euler(narasimhan_ramanans_desingularisation(3)), euler(seshadris_desingularisation(3))
+(432, 112)
+```
+"""
+function narasimhan_ramanans_desingularisation(genus::Integer)
+  g = Int(genus)
+  g >= 3 || throw(ArgumentError("genus needs to be at least 3"))
+  return blowup(
+    seshadris_desingularisation(g), 2^(2g) * grassmannian(3, g); codimension=6
+  )
+end
+
+"""
+    kirwans_desingularisation(genus)
+
+Hodge diamond of Kirwan's desingularisation of the moduli space of rank 2 bundles with
+trivial determinant on a curve of the given genus, at least 3.
+
+By Theorem 5.6 of [MR2099191] it is the blowup of the Narasimhan--Ramanan desingularisation
+in ``2^{2g}`` copies of a ``\\mathbb{P}^{g-2}``-bundle over ``\\operatorname{Gr}(2,g)``,
+which sit in codimension 3. Its Betti numbers were computed in [MR2099191] and [MR2122217]
+by Kirwan's algorithm; the centres of the two blowdowns are of Tate type, so the Hodge
+numbers follow from those of Seshadri's desingularisation.
+
+  - [MR2099191] Kiem--Li, Desingularizations of the moduli space of rank 2 bundles over a
+    curve. Math. Ann. 330 (2004), 491--518.
+  - [MR2122217] Choe--Choy--Kiem, Cohomology of the moduli space of Hecke cycles. Topology
+    44 (2005), 585--608.
+
+# Examples
+
+It desingularises a moduli space of dimension ``3g-3``:
+
+```jldoctest
+julia> dimension(kirwans_desingularisation(4))
+9
+```
+
+Each of the two blowups adds ``2^{2g}`` exceptional divisors to the second Betti number,
+which is 2 for Seshadri's desingularisation, so it is ``2\\cdot 2^{2g}+2`` for genus 3:
+
+```jldoctest
+julia> betti(kirwans_desingularisation(3))[3]
+130
+```
+"""
+function kirwans_desingularisation(genus::Integer)
+  g = Int(genus)
+  g >= 3 || throw(ArgumentError("genus needs to be at least 3"))
+  centre = 2^(2g) * projective_bundle(grassmannian(2, g), g - 1)
+  return blowup(narasimhan_ramanans_desingularisation(g), centre; codimension=3)
+end
+
+"""
     moduli_parabolic_vector_bundles_rank_two(genus, weights)
 
 Hodge diamond of the moduli space of parabolic rank 2 bundles with fixed determinant of odd

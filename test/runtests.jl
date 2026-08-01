@@ -258,6 +258,29 @@ const R, x, y = hodge_ring()
     @test seshadris_desingularisation(2) == Pn(3)
     @test euler(seshadris_desingularisation(3)) == 112
 
+    # Betti numbers of the two other desingularisations, from the blowup chain that
+    # Kiem--Li [MR2099191] and Choe--Choy--Kiem [MR2122217] run through Kirwan's algorithm
+    @test betti(narasimhan_ramanans_desingularisation(3)) ==
+      [1, 0, 66, 6, 81, 6, 160, 6, 81, 6, 66, 0, 1]
+    @test betti(kirwans_desingularisation(3)) ==
+      [1, 0, 130, 6, 273, 6, 416, 6, 273, 6, 130, 0, 1]
+    for genus in 3:5
+      S = seshadris_desingularisation(genus)
+      n = 3genus - 3
+      for X in
+          (narasimhan_ramanans_desingularisation(genus), kirwans_desingularisation(genus))
+        @test dimension(X) == n
+        @test arises_from_variety(X)
+        @test X[0, 0] == 1
+        @test all(X[p, q] >= 0 for p in 0:n, q in 0:n)
+        # both centres are of Tate type, so only even cohomology grows
+        @test all(betti(X)[k] == betti(S)[k] for k in 2:2:(2n + 1))
+      end
+    end
+    # for genus 2 the moduli space is already smooth and these constructions do not apply
+    @test_throws ArgumentError narasimhan_ramanans_desingularisation(2)
+    @test_throws ArgumentError kirwans_desingularisation(2)
+
     # for non-coprime rank and degree the answer is intersection cohomology, via
     # Mozgovoy--Reineke; the two formulas have to agree wherever both apply
     for (rank, degree, genus) in
