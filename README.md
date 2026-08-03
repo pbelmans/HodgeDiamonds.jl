@@ -1,5 +1,6 @@
 # HodgeDiamonds.jl
 
+[![Version](https://juliahub.com/docs/General/HodgeDiamonds/stable/version.svg)](https://juliahub.com/ui/Packages/General/HodgeDiamonds)
 [![CI](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/CI.yml)
 [![Documentation](https://github.com/pbelmans/HodgeDiamonds.jl/actions/workflows/docs.yml/badge.svg)](https://pbelmans.ncag.info/HodgeDiamonds.jl)
 [![codecov](https://codecov.io/gh/pbelmans/HodgeDiamonds.jl/graph/badge.svg)](https://codecov.io/gh/pbelmans/HodgeDiamonds.jl)
@@ -11,7 +12,7 @@ translation of the [Hodge diamond cutter](https://github.com/pbelmans/hodge-diam
 
 ```julia
 using Pkg
-Pkg.add(url = "https://github.com/pbelmans/HodgeDiamonds.jl")
+Pkg.add("HodgeDiamonds")
 ```
 
 ## Quick start
