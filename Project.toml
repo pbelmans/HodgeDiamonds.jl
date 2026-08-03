@@ -1,6 +1,6 @@
 name = "HodgeDiamonds"
 uuid = "683f8233-a80c-4a96-9568-157369475735"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Pieter Belmans <p.belmans@uu.nl>"]
 
 [deps]
