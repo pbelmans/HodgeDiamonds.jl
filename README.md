@@ -21,6 +21,7 @@ Pkg.add("HodgeDiamonds")
 julia> using HodgeDiamonds
 
 julia> K3()
+K3 surface
           1
       0        0
   1       20       1
@@ -28,6 +29,7 @@ julia> K3()
           1
 
 julia> hilbn(K3(), 2)
+K3^[2]
                     1
                0         0
           1        21        1
