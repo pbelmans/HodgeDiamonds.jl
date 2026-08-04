@@ -30,4 +30,5 @@ jobs:
       - uses: JuliaRegistries/TagBot@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ssh: ${{ secrets.DOCUMENTER_KEY }}
+          # a deploy key of its own: DOCUMENTER_KEY cannot push commits touching workflows
+          ssh: ${{ secrets.TAGBOT_KEY }}
